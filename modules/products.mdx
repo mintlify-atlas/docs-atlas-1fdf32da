@@ -1,0 +1,315 @@
+---
+title: 'Products Module'
+description: 'Complete guide to the product management module - catalog, pricing, and inventory integration'
+---
+
+## Overview
+
+The Products module is the core catalog system of FrontendPT. It manages product information, pricing, stock levels, and category relationships. This module provides a complete CRUD interface for product management with search, pagination, and real-time validation.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Product Catalog" icon="box">
+    Full CRUD operations for managing product inventory with name, price, stock, and category.
+  </Card>
+  <Card title="Search & Filter" icon="magnifying-glass">
+    Real-time search across product names with instant results and pagination support.
+  </Card>
+  <Card title="Category Integration" icon="tag">
+    Each product is linked to a category for better organization and filtering.
+  </Card>
+  <Card title="Stock Management" icon="warehouse">
+    Track stock levels for each product, with validation on order creation.
+  </Card>
+</CardGroup>
+
+## User Interface
+
+The Products page (`src/ui/pages/products/ProductsPage.jsx`) provides a comprehensive table view with the following elements:
+
+- **Header**: Title, subtitle, and "+ Nuevo producto" button
+- **Search Bar**: Real-time search by product name
+- **Product Table**: Displays ID, Name, Price, Stock, Category, and Actions
+- **Modal Form**: Create/edit products with validation
+- **Toast Notifications**: Success and error feedback
+
+### Key UI Components
+
+- Search resets pagination to page 1 automatically
+- Price displayed with 2 decimal precision (`$XX.XX`)
+- Category dropdown populated from the Categories module
+- Edit/Delete buttons with visual feedback on hover
+
+## Developer Usage
+
+### Using the Products Hook
+
+The `useProducts` hook provides state management and CRUD operations:
+
+```javascript
+import { useProducts } from "../../../application/hooks/useProducts";
+
+function MyComponent() {
+  const {
+    products,        // Current page products
+    allProducts,     // All products (no pagination)
+    pagination,      // Pagination metadata
+    loading,         // Loading state
+    error,           // Error message
+    search,          // Current search term
+    setSearch,       // Update search
+    page,            // Current page number
+    setPage,         // Change page
+    addProduct,      // Create product
+    editProduct,     // Update product
+    removeProduct    // Delete product
+  } = useProducts();
+
+  return (
+    // Your component JSX
+  );
+}
+```
+
+### Hook Implementation
+
+<Tabs>
+  <Tab title="Hook Source">
+    ```javascript src/application/hooks/useProducts.js
+    import { useState, useEffect, useCallback } from "react";
+    import * as productService from "../../infrastructure/productService";
+
+    export function useProducts() {
+      const [products, setProducts] = useState([]);
+      const [allProducts, setAllProducts] = useState([]);
+      const [pagination, setPagination] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [search, setSearch] = useState("");
+      const [page, setPage] = useState(1);
+
+      const fetchProducts = useCallback(async () => {
+        try {
+          setLoading(true);
+          const data = await productService.getProducts(page, search);
+          setProducts(data.products.data);
+          setPagination(data.products);
+          setError(null);
+        } catch (err) {
+          setError("Error al cargar productos");
+        } finally {
+          setLoading(false);
+        }
+      }, [page, search]);
+
+      useEffect(() => {
+        fetchProducts();
+      }, [fetchProducts]);
+
+      useEffect(() => {
+        productService.getAllProducts().then(setAllProducts);
+      }, []);
+
+      const addProduct = async product => {
+        await productService.createProduct(product);
+        fetchProducts();
+      };
+
+      const editProduct = async (id, product) => {
+        await productService.updateProduct(id, product);
+        fetchProducts();
+      };
+
+      const removeProduct = async id => {
+        await productService.deleteProduct(id);
+        fetchProducts();
+      };
+
+      return {
+        products,
+        allProducts,
+        pagination,
+        loading,
+        error,
+        search,
+        setSearch,
+        page,
+        setPage,
+        addProduct,
+        editProduct,
+        removeProduct,
+      };
+    }
+    ```
+  </Tab>
+  <Tab title="Service Layer">
+    ```javascript src/infrastructure/productService.js
+    import api from "./api";
+
+    export const getProducts = async (page = 1, search = "", category_id = "") => {
+      const params = { page, search };
+      if (category_id !== "") params.category_id = category_id;
+      const { data } = await api.get("/products", { params });
+      return data;
+    };
+
+    export const getAllProducts = async () => {
+      const { data } = await api.get("/products/all");
+      return data.products;
+    };
+
+    export const createProduct = async product => {
+      const { data } = await api.post("/products", product);
+      return data.product;
+    };
+
+    export const updateProduct = async (id, product) => {
+      const { data } = await api.put(`/products/${id}`, product);
+      return data.product;
+    };
+
+    export const deleteProduct = async id => {
+      await api.delete(`/products/${id}`);
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Workflow Examples
+
+### Creating a Product
+
+<Steps>
+  <Step title="Open Create Modal">
+    Click "+ Nuevo producto" button to open the creation modal.
+  </Step>
+  <Step title="Fill Form Fields">
+    Enter product name, price, stock quantity, and select a category from the dropdown.
+  </Step>
+  <Step title="Submit">
+    Click "Crear producto" to save. The form validates all fields are filled.
+  </Step>
+  <Step title="Confirmation">
+    On success, the modal closes and a toast notification appears: "Producto creado correctamente".
+  </Step>
+</Steps>
+
+### Editing a Product
+
+```javascript
+const openEdit = product => {
+  setEditing(product);
+  setForm({
+    name: product.name,
+    price: product.price,
+    stock: product.stock,
+    category_id: product.category_id,
+  });
+  setFormError("");
+  setShowModal(true);
+};
+
+const handleSubmit = async () => {
+  if (!form.name || !form.price || !form.stock || !form.category_id) {
+    setFormError("Todos los campos son obligatorios");
+    return;
+  }
+  try {
+    if (editing) {
+      await editProduct(editing.id, form);
+      showToast("Producto actualizado correctamente");
+    }
+    setShowModal(false);
+  } catch (err) {
+    setFormError(err.response?.data?.message ?? "Error al guardar");
+  }
+};
+```
+
+### Searching Products
+
+The search functionality filters products in real-time and resets pagination:
+
+```javascript
+<SearchBar
+  value={search}
+  onChange={val => {
+    setSearch(val);
+    setPage(1);  // Reset to first page on search
+  }}
+  placeholder="Buscar producto..."
+/>
+```
+
+## Data Structure
+
+### Product Object
+
+```typescript
+interface Product {
+  id: number;
+  name: string;
+  price: string | number;  // Stored as decimal, displayed with 2 decimals
+  stock: number;
+  category_id: number;
+  category?: {            // Populated by backend
+    id: number;
+    name: string;
+  };
+}
+```
+
+### API Endpoints
+
+| Method | Endpoint | Parameters | Description |
+|--------|----------|------------|-------------|
+| GET | `/products` | `page`, `search`, `category_id` | Paginated product list |
+| GET | `/products/all` | - | All products (for dropdowns) |
+| POST | `/products` | Product object | Create new product |
+| PUT | `/products/:id` | Product object | Update product |
+| DELETE | `/products/:id` | - | Delete product |
+
+## Validation Rules
+
+<Warning>
+  All form fields are required when creating or editing a product:
+  - Name must not be empty
+  - Price must be a valid number
+  - Stock must be a valid number
+  - Category must be selected
+</Warning>
+
+## Integration Points
+
+- **Categories Module**: Products require a valid category assignment
+- **Inventory Module**: Stock levels are managed through the Inventory module
+- **Orders Module**: Products can be added to orders (validates stock availability)
+
+## Error Handling
+
+The module displays errors through:
+
+1. **Form Validation**: Inline error messages in the modal
+2. **Toast Notifications**: Success (green) or error (red) messages
+3. **API Errors**: Backend validation messages are displayed to the user
+
+```javascript
+try {
+  await addProduct(form);
+  showToast("Producto creado correctamente");
+} catch (err) {
+  setFormError(err.response?.data?.message ?? "Error al guardar");
+  showToast(err.response?.data?.message ?? "Error al guardar", "error");
+}
+```
+
+## Best Practices
+
+<Tip>
+  - Always validate form inputs before submission
+  - Use `allProducts` for dropdowns to avoid pagination issues
+  - Reset pagination when changing search terms
+  - Display prices with 2 decimal precision for consistency
+  - Show loading states during async operations
+</Tip>

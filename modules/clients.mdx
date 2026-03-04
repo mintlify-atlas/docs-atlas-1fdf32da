@@ -1,0 +1,393 @@
+---
+title: 'Clients Module'
+description: 'Manage your customer database with the clients module - complete contact information and order history'
+---
+
+## Overview
+
+The Clients module manages the customer database for FrontendPT. It provides full CRUD operations for client records including name, email, and phone information. Clients are used throughout the application, particularly when creating orders.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Contact Management" icon="address-book">
+    Store and manage client information including name, email, and phone number.
+  </Card>
+  <Card title="Search Functionality" icon="magnifying-glass">
+    Real-time search across client names, emails, and phone numbers.
+  </Card>
+  <Card title="Paginated Lists" icon="list">
+    Server-side pagination for efficient handling of large client databases.
+  </Card>
+  <Card title="Order Integration" icon="cart-shopping">
+    Clients are linked to orders for tracking purchase history.
+  </Card>
+</CardGroup>
+
+## User Interface
+
+The Clients page (`src/ui/pages/clients/ClientsPage.jsx`) provides:
+
+- **Header**: Page title with "+ Nuevo cliente" action button
+- **Search Bar**: Filter clients by name, email, or phone
+- **Client Table**: Displays ID, Name, Email, Phone, and Actions
+- **Modal Form**: Create/edit interface with validation
+- **Toast Notifications**: Success and error feedback
+
+### Table Layout
+
+The client table displays essential contact information:
+
+```jsx
+<thead>
+  <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
+    <th className="text-left px-4 py-3">ID</th>
+    <th className="text-left px-4 py-3">Nombre</th>
+    <th className="text-left px-4 py-3">Email</th>
+    <th className="text-left px-4 py-3">Teléfono</th>
+    <th className="text-left px-4 py-3">Acciones</th>
+  </tr>
+</thead>
+```
+
+## Developer Usage
+
+### Using the Clients Hook
+
+The `useClients` hook provides complete state management:
+
+```javascript
+import { useClients } from "../../../application/hooks/useClients";
+
+function MyComponent() {
+  const {
+    clients,        // Current page clients
+    allClients,     // All clients (for dropdowns)
+    pagination,     // Pagination metadata
+    loading,        // Loading state
+    error,          // Error message
+    search,         // Current search term
+    setSearch,      // Update search
+    page,           // Current page number
+    setPage,        // Change page
+    addClient,      // Create client
+    editClient,     // Update client
+    removeClient    // Delete client
+  } = useClients();
+
+  return (
+    // Your component JSX
+  );
+}
+```
+
+### Hook Implementation
+
+<Tabs>
+  <Tab title="Hook Source">
+    ```javascript src/application/hooks/useClients.js
+    import { useState, useEffect, useCallback } from "react";
+    import * as clientService from "../../infrastructure/clientService";
+
+    export function useClients() {
+      const [clients, setClients] = useState([]);
+      const [pagination, setPagination] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [search, setSearch] = useState("");
+      const [page, setPage] = useState(1);
+      const [allClients, setAllClients] = useState([]);
+
+      const fetchClients = useCallback(async () => {
+        try {
+          setLoading(true);
+          const data = await clientService.getClients(page, search);
+          setClients(data.clients.data);
+          setPagination(data.clients);
+        } catch (err) {
+          setError("Error al cargar clientes");
+        } finally {
+          setLoading(false);
+        }
+      }, [page, search]);
+
+      useEffect(() => {
+        fetchClients();
+      }, [fetchClients]);
+
+      useEffect(() => {
+        clientService.getAllClients().then(setAllClients);
+      }, []);
+
+      const addClient = async client => {
+        await clientService.createClient(client);
+        fetchClients();
+      };
+
+      const editClient = async (id, client) => {
+        await clientService.updateClient(id, client);
+        fetchClients();
+      };
+
+      const removeClient = async id => {
+        await clientService.deleteClient(id);
+        fetchClients();
+      };
+
+      return {
+        clients,
+        allClients,
+        pagination,
+        loading,
+        error,
+        search,
+        setSearch,
+        page,
+        setPage,
+        addClient,
+        editClient,
+        removeClient,
+      };
+    }
+    ```
+  </Tab>
+  <Tab title="Service Layer">
+    ```javascript src/infrastructure/clientService.js
+    import api from "./api";
+
+    export const getClients = async (page = 1, search = "") => {
+      const params = { page };
+      if (search) params.search = search;
+      const { data } = await api.get("/clients", { params });
+      return data;
+    };
+
+    export const getAllClients = async () => {
+      const { data } = await api.get("/clients/all");
+      return data.clients;
+    };
+
+    export const createClient = async client => {
+      const { data } = await api.post("/clients", client);
+      return data.client;
+    };
+
+    export const updateClient = async (id, client) => {
+      const { data } = await api.put(`/clients/${id}`, client);
+      return data.client;
+    };
+
+    export const deleteClient = async id => {
+      await api.delete(`/clients/${id}`);
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Workflow Examples
+
+### Creating a Client
+
+<Steps>
+  <Step title="Open Create Modal">
+    Click the "+ Nuevo cliente" button in the page header.
+  </Step>
+  <Step title="Fill Form Fields">
+    Enter the client's name, email address, and phone number. All fields are required.
+  </Step>
+  <Step title="Validate Input">
+    The form validates that all fields are filled before submission.
+  </Step>
+  <Step title="Submit">
+    Click "Crear cliente" to save the new client record.
+  </Step>
+  <Step title="Confirmation">
+    The modal closes and a toast notification confirms: "Cliente creado correctamente".
+  </Step>
+</Steps>
+
+### Editing Client Information
+
+```javascript
+const openEdit = client => {
+  setEditing(client);
+  setForm({ 
+    name: client.name, 
+    email: client.email, 
+    phone: client.phone 
+  });
+  setFormError("");
+  setShowModal(true);
+};
+
+const handleSubmit = async () => {
+  if (!form.name || !form.email || !form.phone) {
+    setFormError("Todos los campos son obligatorios");
+    return;
+  }
+  try {
+    if (editing) {
+      await editClient(editing.id, form);
+      showToast("Cliente actualizado correctamente");
+    }
+    setShowModal(false);
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "Error al guardar";
+    setFormError(msg);
+    showToast(msg, "error");
+  }
+};
+```
+
+### Searching Clients
+
+The search functionality filters clients server-side:
+
+```javascript
+<SearchBar
+  value={search}
+  onChange={val => {
+    setSearch(val);
+    setPage(1);  // Reset pagination on search
+  }}
+  placeholder="Buscar cliente..."
+/>
+```
+
+<Note>
+  Search queries are sent to the backend, which filters across name, email, and phone fields.
+</Note>
+
+## Data Structure
+
+### Client Object
+
+```typescript
+interface Client {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+}
+```
+
+### API Endpoints
+
+| Method | Endpoint | Parameters | Description |
+|--------|----------|------------|-------------|
+| GET | `/clients` | `page`, `search` | Paginated client list |
+| GET | `/clients/all` | - | All clients (for dropdowns) |
+| POST | `/clients` | Client object | Create new client |
+| PUT | `/clients/:id` | Client object | Update client |
+| DELETE | `/clients/:id` | - | Delete client |
+
+## Form Validation
+
+<Warning>
+  All three fields are required when creating or editing a client:
+  - **Name**: Cannot be empty
+  - **Email**: Must be a valid email format
+  - **Phone**: Cannot be empty
+</Warning>
+
+```javascript
+const handleSubmit = async () => {
+  if (!form.name || !form.email || !form.phone) {
+    setFormError("Todos los campos son obligatorios");
+    return;
+  }
+  // Proceed with submission
+};
+```
+
+## Integration Points
+
+### Orders Module
+
+Clients are primarily used in the Orders module:
+
+```javascript
+// In OrdersPage.jsx
+const { allClients } = useClients();
+
+// Client dropdown in order form
+<select value={clientId} onChange={e => setClientId(e.target.value)}>
+  <option value="">Selecciona un cliente</option>
+  {allClients.map(c => (
+    <option key={c.id} value={c.id}>
+      {c.name}
+    </option>
+  ))}
+</select>
+```
+
+<Tip>
+  Use `allClients` instead of `clients` for dropdowns to avoid pagination issues.
+</Tip>
+
+## Deletion Constraints
+
+<Warning>
+  Deleting a client may fail if they have associated orders. The backend enforces referential integrity and returns an error message.
+</Warning>
+
+```javascript
+const handleDelete = async id => {
+  if (!confirm("¿Eliminar este cliente?")) return;
+  try {
+    await removeClient(id);
+    showToast("Cliente eliminado correctamente");
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "No se pudo eliminar";
+    showToast(msg, "error");
+  }
+};
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Data Fetching" icon="database">
+    Fetch `allClients` separately for dropdown usage to ensure all options are available.
+  </Card>
+  <Card title="Search Reset" icon="rotate-left">
+    Always reset pagination to page 1 when changing search terms.
+  </Card>
+  <Card title="Validation" icon="shield-check">
+    Validate all fields client-side before API submission.
+  </Card>
+  <Card title="Error Display" icon="triangle-exclamation">
+    Show errors both inline (form) and via toast notifications.
+  </Card>
+</CardGroup>
+
+## Error Handling
+
+The module provides comprehensive error handling:
+
+```javascript
+try {
+  await addClient(form);
+  setShowModal(false);
+  showToast("Cliente creado correctamente");
+} catch (err) {
+  const msg = err.response?.data?.message ?? "Error al guardar";
+  setFormError(msg);        // Show in modal
+  showToast(msg, "error");  // Show toast
+}
+```
+
+## UI Components Used
+
+- **PageHeader**: Title, subtitle, and action button
+- **SearchBar**: Real-time search input
+- **Pagination**: Navigate through client pages
+- **Modal**: Form container for create/edit
+- **Toast**: Success/error notifications
+
+## Performance Considerations
+
+- Server-side pagination handles large client databases efficiently
+- Separate `allClients` endpoint prevents pagination in dropdowns
+- Search queries are debounced through the useCallback dependency
+- Loading states prevent multiple simultaneous requests

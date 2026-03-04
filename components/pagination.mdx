@@ -1,0 +1,168 @@
+---
+title: Pagination
+description: A pagination component for navigating through multi-page data sets
+---
+
+The Pagination component provides navigation controls for paginated data. It displays the current page, total pages, and previous/next buttons with automatic disabling at boundaries.
+
+## Visual Appearance
+
+The Pagination renders with:
+- Horizontal layout with Previous/Next buttons
+- Current page indicator in the center
+- Disabled state styling for buttons at boundaries
+- Small text size with gray coloring
+- Hover effects on enabled buttons
+
+## Props
+
+<ParamField path="pagination" type="object" required>
+  Pagination metadata object containing:
+  - `current_page`: Current page number (1-indexed)
+  - `last_page`: Total number of pages
+  
+  Returns null if pagination is not provided or last_page ≤ 1
+</ParamField>
+
+<ParamField path="onPageChange" type="function" required>
+  Callback function invoked with the new page number when navigation buttons are clicked
+</ParamField>
+
+## Usage Examples
+
+### Products List Pagination
+
+```jsx
+import Pagination from "../../components/Pagination";
+import { useState } from "react";
+
+function ProductsPage() {
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+
+  // Fetch products with pagination
+  // pagination object example: { current_page: 1, last_page: 5 }
+
+  return (
+    <div>
+      {/* Product list */}
+      <table>
+        {/* ... */}
+      </table>
+
+      <Pagination 
+        pagination={pagination} 
+        onPageChange={setPage} 
+      />
+    </div>
+  );
+}
+```
+
+### Orders List Pagination
+
+```jsx
+import Pagination from "../../components/Pagination";
+
+function OrdersPage() {
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+
+  return (
+    <div>
+      {/* Orders table */}
+      
+      <Pagination 
+        pagination={pagination} 
+        onPageChange={setPage} 
+      />
+    </div>
+  );
+}
+```
+
+### Inventory Pagination
+
+```jsx
+import Pagination from "../../components/Pagination";
+
+function InventoryPage() {
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+
+  return (
+    <div>
+      {/* Inventory list */}
+      
+      <Pagination 
+        pagination={pagination} 
+        onPageChange={setPage} 
+      />
+    </div>
+  );
+}
+```
+
+### Categories with Custom Page State
+
+```jsx
+import Pagination from "../../components/Pagination";
+
+function CategoriesPage() {
+  const [catPage, setCatPage] = useState(1);
+  const [catPagination, setCatPagination] = useState(null);
+
+  return (
+    <div>
+      {/* Categories list */}
+      
+      <Pagination 
+        pagination={catPagination} 
+        onPageChange={setCatPage} 
+      />
+    </div>
+  );
+}
+```
+
+## Behavior
+
+### Automatic Hiding
+
+The component automatically returns `null` (doesn't render) when:
+- No pagination object is provided
+- `last_page` is 1 or less (single page of data)
+
+### Button States
+
+- **Previous Button**: Disabled when `current_page === 1`
+- **Next Button**: Disabled when `current_page === last_page`
+- Disabled buttons have reduced opacity (40%)
+- Enabled buttons show hover effects
+
+### Page Navigation
+
+- Previous button calls: `onPageChange(current_page - 1)`
+- Next button calls: `onPageChange(current_page + 1)`
+- No direct page number input (sequential navigation only)
+
+## Common Use Cases
+
+- **Product Lists**: Navigate through paginated product catalogs
+- **Order History**: Browse through multiple pages of orders
+- **Client Management**: Page through client databases
+- **Inventory Views**: Navigate stock listings
+- **Category Lists**: Browse category pages
+
+## Implementation Details
+
+The Pagination component is located at `/home/daytona/workspace/source/src/ui/components/Pagination.jsx:1-22`.
+
+Key features:
+- Early return for single-page or empty data
+- Disabled state management on buttons
+- Flexbox layout with gap spacing
+- Primary color accent on "Siguiente" (Next) button
+- Transition effects on hover
+- Small text size (text-sm) for compact display
+- Top margin (mt-4) for spacing from content

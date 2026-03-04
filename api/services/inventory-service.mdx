@@ -1,0 +1,328 @@
+---
+title: Inventory Service
+description: API reference for inventory management operations including listing products and adjusting stock levels
+---
+
+The Inventory Service provides functions for managing product inventory in the FrontendPT application. All functions interact with the Laravel backend API at `http://localhost:8000/api`.
+
+## Functions
+
+### getInventory
+
+Retrieves a paginated list of inventory items with optional search filtering.
+
+```javascript
+getInventory(page = 1, search = "")
+```
+
+<ParamField path="page" type="number" default="1">
+  The page number for pagination
+</ParamField>
+
+<ParamField path="search" type="string" default="">
+  Search term to filter inventory items by product name or SKU. Only included in request if not empty
+</ParamField>
+
+**API Endpoint:** `GET /api/inventory`
+
+**Returns:**
+<ResponseField name="data" type="object">
+  Paginated response object containing inventory items and pagination metadata
+  
+  <ResponseField name="products" type="array">
+    Array of product objects with inventory information
+  </ResponseField>
+  
+  <ResponseField name="current_page" type="number">
+    Current page number
+  </ResponseField>
+  
+  <ResponseField name="total" type="number">
+    Total number of inventory items
+  </ResponseField>
+  
+  <ResponseField name="per_page" type="number">
+    Number of items per page
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getInventory } from './infrastructure/inventoryService';
+
+// Get first page of inventory
+const inventoryData = await getInventory();
+console.log(`Total items: ${inventoryData.total}`);
+
+// Get specific page
+const page3 = await getInventory(3);
+
+// Search inventory
+const searchResults = await getInventory(1, "laptop");
+```
+
+**Example Response:**
+
+```json
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Laptop Pro 15",
+      "sku": "LPT-15-001",
+      "stock": 25,
+      "price": 1299.99,
+      "category_id": 1,
+      "last_updated": "2026-03-04T09:30:00.000000Z"
+    },
+    {
+      "id": 2,
+      "name": "Wireless Mouse",
+      "sku": "MSE-WL-002",
+      "stock": 150,
+      "price": 29.99,
+      "category_id": 3,
+      "last_updated": "2026-03-03T14:20:00.000000Z"
+    },
+    {
+      "id": 3,
+      "name": "USB-C Cable",
+      "sku": "CBL-UC-003",
+      "stock": 5,
+      "price": 12.99,
+      "category_id": 4,
+      "last_updated": "2026-03-04T08:15:00.000000Z"
+    }
+  ],
+  "current_page": 1,
+  "total": 127,
+  "per_page": 15
+}
+```
+
+---
+
+### adjustStock
+
+Adjusts the stock level for a specific product in the inventory.
+
+```javascript
+adjustStock(id, stock)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the product whose stock to adjust
+</ParamField>
+
+<ParamField path="stock" type="number" required>
+  The new stock quantity. This sets the absolute stock level (not a relative adjustment)
+</ParamField>
+
+**API Endpoint:** `PATCH /api/inventory/{id}`
+
+**Request Body:**
+```json
+{
+  "stock": 50
+}
+```
+
+**Returns:**
+<ResponseField name="product" type="object">
+  The updated product object with new stock level
+  
+  <ResponseField name="id" type="number">
+    Product identifier
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Product name
+  </ResponseField>
+  
+  <ResponseField name="stock" type="number">
+    Updated stock quantity
+  </ResponseField>
+  
+  <ResponseField name="price" type="number">
+    Product price
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Timestamp of last update
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { adjustStock } from './infrastructure/inventoryService';
+
+// Set stock to specific quantity
+const updatedProduct = await adjustStock(3, 50);
+console.log(`Stock updated to: ${updatedProduct.stock}`);
+
+// Restock low inventory item
+const restocked = await adjustStock(3, 100);
+
+// Set out of stock
+const outOfStock = await adjustStock(5, 0);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 3,
+  "name": "USB-C Cable",
+  "sku": "CBL-UC-003",
+  "stock": 50,
+  "price": 12.99,
+  "category_id": 4,
+  "created_at": "2026-01-20T10:00:00.000000Z",
+  "updated_at": "2026-03-04T11:45:00.000000Z"
+}
+```
+
+**Notes:**
+- This function sets the absolute stock level, not a relative adjustment
+- To increment stock by 10, you must first get current stock, then call `adjustStock(id, currentStock + 10)`
+- Negative stock values may be rejected by the backend validation
+- Stock adjustments should be logged for audit purposes on the backend
+
+## Import
+
+```javascript
+import {
+  getInventory,
+  adjustStock
+} from './infrastructure/inventoryService';
+```
+
+## Base API Configuration
+
+All requests are made using axios with the following configuration:
+- **Base URL:** `http://localhost:8000/api`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+## Common Use Cases
+
+### Low Stock Alert System
+
+```javascript
+import { getInventory } from './infrastructure/inventoryService';
+
+const checkLowStock = async (threshold = 10) => {
+  const inventoryData = await getInventory();
+  
+  const lowStockItems = inventoryData.products.filter(
+    product => product.stock < threshold
+  );
+  
+  if (lowStockItems.length > 0) {
+    console.log(`Warning: ${lowStockItems.length} items low on stock`);
+    lowStockItems.forEach(item => {
+      console.log(`- ${item.name}: ${item.stock} units remaining`);
+    });
+  }
+  
+  return lowStockItems;
+};
+
+const lowStock = await checkLowStock(10);
+```
+
+### Inventory Adjustment Workflow
+
+```javascript
+import { getInventory, adjustStock } from './infrastructure/inventoryService';
+
+// Get current inventory
+const inventory = await getInventory(1, "USB-C Cable");
+const product = inventory.products[0];
+
+console.log(`Current stock: ${product.stock}`);
+
+// Receive shipment of 50 units
+const newStock = product.stock + 50;
+const updated = await adjustStock(product.id, newStock);
+
+console.log(`New stock level: ${updated.stock}`);
+```
+
+### Bulk Stock Adjustment
+
+```javascript
+import { adjustStock } from './infrastructure/inventoryService';
+
+const bulkAdjustStock = async (adjustments) => {
+  // adjustments = [{ id: 1, stock: 50 }, { id: 2, stock: 100 }]
+  
+  const results = await Promise.all(
+    adjustments.map(adj => adjustStock(adj.id, adj.stock))
+  );
+  
+  console.log(`Updated ${results.length} products`);
+  return results;
+};
+
+const adjustments = [
+  { id: 1, stock: 30 },
+  { id: 2, stock: 75 },
+  { id: 3, stock: 100 }
+];
+
+await bulkAdjustStock(adjustments);
+```
+
+### Inventory Dashboard
+
+```javascript
+import { getInventory } from './infrastructure/inventoryService';
+import { useState, useEffect } from 'react';
+
+const InventoryDashboard = () => {
+  const [inventory, setInventory] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    lowStock: 0,
+    outOfStock: 0
+  });
+  
+  useEffect(() => {
+    const loadInventory = async () => {
+      const data = await getInventory();
+      setInventory(data.products);
+      
+      const lowStock = data.products.filter(p => p.stock < 10 && p.stock > 0).length;
+      const outOfStock = data.products.filter(p => p.stock === 0).length;
+      
+      setStats({
+        total: data.total,
+        lowStock,
+        outOfStock
+      });
+    };
+    loadInventory();
+  }, []);
+  
+  return (
+    <div>
+      <h2>Inventory Overview</h2>
+      <div>Total Products: {stats.total}</div>
+      <div>Low Stock Items: {stats.lowStock}</div>
+      <div>Out of Stock: {stats.outOfStock}</div>
+    </div>
+  );
+};
+```
+
+## Best Practices
+
+1. **Stock Level Validation**: Always validate stock levels before adjusting to prevent negative values
+2. **Concurrent Updates**: Be aware of race conditions when multiple users adjust stock simultaneously
+3. **Audit Trail**: Consider logging all stock adjustments with user information and timestamps
+4. **Low Stock Alerts**: Implement monitoring to alert when stock falls below reorder threshold
+5. **Batch Updates**: Use Promise.all() for bulk stock adjustments to improve performance

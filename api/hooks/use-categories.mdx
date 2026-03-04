@@ -1,0 +1,191 @@
+---
+title: useCategories
+description: React hook for managing product categories with local pagination and CRUD operations
+---
+
+## Overview
+
+The `useCategories` hook provides an interface for managing product categories in the FrontendPT application. It fetches all categories from the backend and implements local pagination, making it suitable for both dropdown lists and paginated category management views.
+
+## Function Signature
+
+```javascript
+function useCategories(): UseCategoriesReturn
+```
+
+## Return Value
+
+The hook returns an object with the following properties:
+
+<ResponseField name="categories" type="array">
+  Complete array of all category objects. This list contains all categories without pagination, useful for dropdowns in product forms.
+</ResponseField>
+
+<ResponseField name="paginatedCategories" type="array">
+  Array of category objects for the current page. Sliced from the complete categories list based on the current page and items per page (10).
+</ResponseField>
+
+<ResponseField name="catPagination" type="object">
+  Local pagination metadata object containing:
+  - `current_page`: Current page number
+  - `last_page`: Total number of pages (calculated as `Math.ceil(categories.length / 10)`)
+</ResponseField>
+
+<ResponseField name="setCatPage" type="function">
+  Function to change the current page for category pagination.
+  
+  **Signature:** `(page: number) => void`
+</ResponseField>
+
+<ResponseField name="loading" type="boolean">
+  Loading state indicator. `true` when fetching categories, `false` otherwise.
+</ResponseField>
+
+<ResponseField name="error" type="string | null">
+  Error message if category fetching fails. Returns "Error al cargar categorías" on error, `null` when no error.
+</ResponseField>
+
+<ResponseField name="addCategory" type="function">
+  Async function to create a new category. Automatically updates the local categories list with the new category.
+  
+  **Signature:** `(name: string) => Promise<void>`
+  
+  **Parameters:**
+  - `name`: Category name string
+</ResponseField>
+
+<ResponseField name="editCategory" type="function">
+  Async function to update an existing category. Automatically updates the category in the local list.
+  
+  **Signature:** `(id: number, name: string) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Category ID to update
+  - `name`: Updated category name
+</ResponseField>
+
+<ResponseField name="removeCategory" type="function">
+  Async function to delete a category. Automatically removes the category from the local list.
+  
+  **Signature:** `(id: number) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Category ID to delete
+</ResponseField>
+
+## Implementation Details
+
+<Note>
+  The `useCategories` hook implements **local pagination** because the backend API returns all categories at once. This design choice ensures that the complete category list is always available for product dropdowns while still providing pagination for the category management view.
+</Note>
+
+The hook uses a fixed `itemsPerPage` value of 10 for pagination calculations.
+
+## Usage Example
+
+### Category Management View with Pagination
+
+```javascript
+import { useCategories } from "@/application/hooks/useCategories";
+
+function CategoriesPage() {
+  const {
+    paginatedCategories,
+    catPagination,
+    setCatPage,
+    loading,
+    error,
+    addCategory,
+    editCategory,
+    removeCategory,
+  } = useCategories();
+
+  const handleCreateCategory = async () => {
+    await addCategory("New Category");
+  };
+
+  const handleUpdateCategory = async (categoryId) => {
+    await editCategory(categoryId, "Updated Category Name");
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    await removeCategory(categoryId);
+  };
+
+  if (loading) return <div>Loading categories...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <button onClick={handleCreateCategory}>Add Category</button>
+
+      <div>
+        {paginatedCategories.map((category) => (
+          <div key={category.id}>
+            <h3>{category.name}</h3>
+            <button onClick={() => handleUpdateCategory(category.id)}>
+              Edit
+            </button>
+            <button onClick={() => handleDeleteCategory(category.id)}>
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <button
+          disabled={catPagination.current_page === 1}
+          onClick={() => setCatPage(catPagination.current_page - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {catPagination.current_page} of {catPagination.last_page}
+        </span>
+        <button
+          disabled={catPagination.current_page === catPagination.last_page}
+          onClick={() => setCatPage(catPagination.current_page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Using All Categories for a Dropdown
+
+```javascript
+import { useCategories } from "@/application/hooks/useCategories";
+
+function ProductForm() {
+  const { categories, loading } = useCategories();
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <form>
+      <label htmlFor="category">Category:</label>
+      <select
+        id="category"
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+      >
+        <option value="">Select a category</option>
+        {categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+    </form>
+  );
+}
+```
+
+## Source Code
+
+Location: `src/application/hooks/useCategories.js:4`

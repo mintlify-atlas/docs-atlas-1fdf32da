@@ -1,0 +1,361 @@
+---
+title: 'Categories Module'
+description: 'Organize products with the category management system - simple CRUD interface for product classification'
+---
+
+## Overview
+
+The Categories module provides a simple yet powerful system for organizing products into groups. It features a streamlined interface with inline creation and modal-based editing, designed for quick category management.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Quick Create" icon="plus">
+    Inline form at the top of the page for instant category creation.
+  </Card>
+  <Card title="Full CRUD" icon="pen-to-square">
+    Complete create, read, update, and delete operations.
+  </Card>
+  <Card title="Local Pagination" icon="table-list">
+    Client-side pagination for smooth navigation through categories.
+  </Card>
+  <Card title="Product Integration" icon="link">
+    Categories are used throughout the app for product classification.
+  </Card>
+</CardGroup>
+
+## User Interface
+
+The Categories page (`src/ui/pages/categories/CategoriesPage.jsx`) features:
+
+- **Inline Create Form**: Quick category creation without modal dialogs
+- **Category Table**: Simple table with ID, Name, and Actions columns
+- **Edit Modal**: Modal dialog for updating category names
+- **Toast Notifications**: Feedback for all operations
+
+### Design Pattern
+
+Unlike other modules, Categories uses an inline form for creation:
+
+```jsx
+<div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+    Nueva categoría
+  </p>
+  <div className="flex gap-2">
+    <input 
+      className="input flex-1" 
+      placeholder="Nombre de la categoría" 
+      value={newName} 
+      onChange={e => setNewName(e.target.value)}
+      onKeyDown={e => e.key === "Enter" && handleCreate()}
+    />
+    <button onClick={handleCreate}>
+      Crear
+    </button>
+  </div>
+</div>
+```
+
+<Note>
+  The inline form supports Enter key submission for faster data entry.
+</Note>
+
+## Developer Usage
+
+### Using the Categories Hook
+
+The `useCategories` hook manages category state with client-side pagination:
+
+```javascript
+import { useCategories } from "../../../application/hooks/useCategories";
+
+function MyComponent() {
+  const {
+    categories,           // All categories
+    paginatedCategories,  // Current page categories
+    catPagination,        // Pagination metadata
+    setCatPage,           // Change page
+    loading,              // Loading state
+    error,                // Error message
+    addCategory,          // Create category
+    editCategory,         // Update category
+    removeCategory        // Delete category
+  } = useCategories();
+
+  return (
+    // Your component JSX
+  );
+}
+```
+
+### Hook Implementation
+
+<Tabs>
+  <Tab title="Hook Source">
+    ```javascript src/application/hooks/useCategories.js
+    import { useState, useEffect } from "react";
+    import * as categoryService from "../../infrastructure/categoryService";
+
+    export function useCategories() {
+      const [categories, setCategories] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [catPage, setCatPage] = useState(1);
+      const itemsPerPage = 10;
+
+      const fetchCategories = async () => {
+        try {
+          setLoading(true);
+          const data = await categoryService.getCategories();
+          setCategories(data);
+        } catch (err) {
+          setError("Error al cargar categorías");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchCategories();
+      }, []);
+
+      const addCategory = async name => {
+        const newCat = await categoryService.createCategory(name);
+        setCategories(prev => [...prev, newCat]);
+      };
+
+      const editCategory = async (id, name) => {
+        const updated = await categoryService.updateCategory(id, name);
+        setCategories(prev => prev.map(c => (c.id === id ? updated : c)));
+      };
+
+      const removeCategory = async id => {
+        await categoryService.deleteCategory(id);
+        setCategories(prev => prev.filter(c => c.id !== id));
+      };
+
+      // Client-side pagination
+      const paginatedCategories = categories.slice(
+        (catPage - 1) * itemsPerPage, 
+        catPage * itemsPerPage
+      );
+
+      const catPagination = {
+        current_page: catPage,
+        last_page: Math.ceil(categories.length / itemsPerPage),
+      };
+
+      return { 
+        categories, 
+        paginatedCategories, 
+        catPagination, 
+        setCatPage, 
+        loading, 
+        error, 
+        addCategory, 
+        editCategory, 
+        removeCategory 
+      };
+    }
+    ```
+  </Tab>
+  <Tab title="Service Layer">
+    ```javascript src/infrastructure/categoryService.js
+    import api from "./api";
+
+    export const getCategories = async () => {
+      const { data } = await api.get("/categories");
+      return data.categories;
+    };
+
+    export const createCategory = async name => {
+      const { data } = await api.post("/categories", { name });
+      return data.category;
+    };
+
+    export const updateCategory = async (id, name) => {
+      const { data } = await api.put(`/categories/${id}`, { name });
+      return data.category;
+    };
+
+    export const deleteCategory = async id => {
+      await api.delete(`/categories/${id}`);
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Workflow Examples
+
+### Creating a Category
+
+<Steps>
+  <Step title="Enter Name">
+    Type the category name in the inline input field at the top of the page.
+  </Step>
+  <Step title="Submit">
+    Press Enter or click the "Crear" button.
+  </Step>
+  <Step title="Validation">
+    The hook validates the name is not empty before submitting.
+  </Step>
+  <Step title="Confirmation">
+    On success, the input clears and a toast shows: "Categoría creada correctamente".
+  </Step>
+</Steps>
+
+### Editing a Category
+
+```javascript
+const openEdit = category => {
+  setEditingCategory(category);
+  setEditingName(category.name);
+  setEditError("");
+  setShowModal(true);
+};
+
+const handleEdit = async () => {
+  if (!editingName.trim()) return;
+  try {
+    await editCategory(editingCategory.id, editingName.trim());
+    setShowModal(false);
+    showToast("Categoría actualizada correctamente");
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "Error al editar categoría";
+    setEditError(msg);
+    showToast(msg, "error");
+  }
+};
+```
+
+### Deleting a Category
+
+<Warning>
+  Deleting a category may fail if it has associated products. The backend validates this constraint and returns an appropriate error message.
+</Warning>
+
+```javascript
+const handleDelete = async id => {
+  if (!confirm("¿Eliminar esta categoría?")) return;
+  try {
+    await removeCategory(id);
+    showToast("Categoría eliminada correctamente");
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "No se pudo eliminar";
+    showToast(msg, "error");
+  }
+};
+```
+
+## Architecture Decision: Client-Side Pagination
+
+Categories use client-side pagination for two important reasons:
+
+1. **Dropdown Usage**: The Products module needs all categories for its dropdown
+2. **Small Dataset**: Categories are typically few, making client-side pagination efficient
+
+```javascript
+// All categories fetched once
+const { data } = await api.get("/categories");
+return data.categories;
+
+// Paginated in the hook
+const paginatedCategories = categories.slice(
+  (catPage - 1) * itemsPerPage, 
+  catPage * itemsPerPage
+);
+```
+
+## Data Structure
+
+### Category Object
+
+```typescript
+interface Category {
+  id: number;
+  name: string;
+}
+```
+
+### API Endpoints
+
+| Method | Endpoint | Parameters | Description |
+|--------|----------|------------|-------------|
+| GET | `/categories` | - | All categories |
+| POST | `/categories` | `{ name: string }` | Create category |
+| PUT | `/categories/:id` | `{ name: string }` | Update category |
+| DELETE | `/categories/:id` | - | Delete category |
+
+## State Management
+
+The hook uses optimistic updates for better UX:
+
+```javascript
+const addCategory = async name => {
+  const newCat = await categoryService.createCategory(name);
+  setCategories(prev => [...prev, newCat]);  // Add to local state
+};
+
+const editCategory = async (id, name) => {
+  const updated = await categoryService.updateCategory(id, name);
+  setCategories(prev => 
+    prev.map(c => (c.id === id ? updated : c))  // Update in place
+  );
+};
+
+const removeCategory = async id => {
+  await categoryService.deleteCategory(id);
+  setCategories(prev => 
+    prev.filter(c => c.id !== id)  // Remove from local state
+  );
+};
+```
+
+## Integration Points
+
+- **Products Module**: Categories are used in the product creation/edit form dropdown
+- **Global Access**: The `categories` array is available throughout the app via the hook
+
+## Keyboard Shortcuts
+
+<CardGroup cols={2}>
+  <Card title="Enter Key" icon="keyboard">
+    Press Enter in the create input to submit immediately.
+  </Card>
+  <Card title="Enter in Modal" icon="keyboard">
+    Press Enter in the edit modal to save changes.
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Tip>
+  - Trim whitespace from category names before submission
+  - Handle backend constraint errors gracefully (e.g., categories with products)
+  - Use the inline form pattern for single-field entities
+  - Clear the create input after successful submission
+  - Use autofocus on the edit modal input for better UX
+</Tip>
+
+## Error Handling
+
+Categories handle two main error scenarios:
+
+1. **Empty Name Validation**: Checked client-side before API call
+2. **Backend Constraints**: Such as deleting categories with associated products
+
+```javascript
+const handleCreate = async () => {
+  if (!newName.trim()) return;  // Client validation
+  try {
+    await addCategory(newName.trim());
+    setNewName("");
+    setCreateError("");
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "Error al crear categoría";
+    setCreateError(msg);  // Display inline
+    showToast(msg, "error");  // Also show toast
+  }
+};
+```

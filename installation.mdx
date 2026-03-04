@@ -1,0 +1,353 @@
+---
+title: Installation Guide
+description: Step-by-step instructions to install and run FrontendPT on your local development environment
+---
+
+# Installation Guide
+
+This guide will walk you through installing FrontendPT and getting it running on your local machine. The process is straightforward and should take less than 5 minutes.
+
+## Prerequisites
+
+Before installing FrontendPT, ensure you have the following installed on your system:
+
+<CardGroup cols={2}>
+  <Card title="Node.js 18+" icon="node-js">
+    Download from [nodejs.org](https://nodejs.org/)
+  </Card>
+  
+  <Card title="npm" icon="box">
+    Comes bundled with Node.js
+  </Card>
+  
+  <Card title="Laravel Backend" icon="server">
+    Backend API running on `http://localhost:8000`
+  </Card>
+  
+  <Card title="Git" icon="git">
+    For cloning the repository
+  </Card>
+</CardGroup>
+
+### Verify Node.js Installation
+
+Check that Node.js and npm are properly installed:
+
+```bash
+node --version  # Should output v18.x.x or higher
+npm --version   # Should output 8.x.x or higher
+```
+
+<Note>
+  Node.js 18 or higher is required. Earlier versions may not be compatible with React 19 and Vite 7.
+</Note>
+
+## Installation Steps
+
+Follow these steps to install FrontendPT:
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the FrontendPT repository to your local machine:
+    
+    ```bash
+    git clone <repository-url>
+    cd frontend
+    ```
+    
+    Replace `<repository-url>` with the actual repository URL provided by your team or organization.
+  </Step>
+  
+  <Step title="Install Dependencies">
+    Install all required npm packages:
+    
+    ```bash
+    npm install
+    ```
+    
+    This will install all dependencies listed in `package.json`, including:
+    
+    **Production Dependencies:**
+    - `react` (19.2.0) — UI library
+    - `react-dom` (19.2.0) — React DOM renderer
+    - `react-router-dom` (7.13.1) — Client-side routing
+    - `axios` (1.13.5) — HTTP client
+    
+    **Development Dependencies:**
+    - `vite` (7.3.1) — Build tool and dev server
+    - `tailwindcss` (3.4.19) — CSS framework
+    - `@vitejs/plugin-react` (5.1.1) — React plugin for Vite
+    - `eslint` and related plugins — Code linting
+    - `autoprefixer` and `postcss` — CSS processing
+    
+    <Note>
+      The installation process may take 1-2 minutes depending on your internet connection.
+    </Note>
+  </Step>
+  
+  <Step title="Verify Installation">
+    Verify that the installation was successful by checking the `node_modules` directory:
+    
+    ```bash
+    ls node_modules
+    ```
+    
+    You should see a list of installed packages including `react`, `vite`, `axios`, and others.
+  </Step>
+  
+  <Step title="Start the Development Server">
+    Launch the Vite development server:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    You should see output similar to:
+    
+    ```bash
+    VITE v7.3.1  ready in 500 ms
+    
+    ➜  Local:   http://localhost:5173/
+    ➜  Network: use --host to expose
+    ➜  press h + enter to show help
+    ```
+    
+    The application is now running at **`http://localhost:5173`**
+  </Step>
+  
+  <Step title="Verify Backend Connection">
+    Open your browser and navigate to `http://localhost:5173`. The application should load and attempt to connect to the backend API.
+    
+    <Warning>
+      If you see network errors in the browser console, ensure your Laravel backend is running at `http://localhost:8000/api`.
+    </Warning>
+  </Step>
+</Steps>
+
+## Backend Setup Requirements
+
+FrontendPT requires a Laravel backend API to function. Ensure the following:
+
+### Backend Must Be Running
+
+The Laravel backend should be running and accessible at:
+
+```
+http://localhost:8000/api
+```
+
+### Required API Endpoints
+
+The backend must expose the following endpoints:
+
+| Module | Endpoints |
+|--------|----------|
+| **Products** | `GET /api/products`, `GET /api/products/all`, `POST /api/products`, `PUT /api/products/{id}`, `DELETE /api/products/{id}` |
+| **Categories** | `GET /api/categories`, `POST /api/categories`, `PUT /api/categories/{id}`, `DELETE /api/categories/{id}` |
+| **Clients** | `GET /api/clients`, `GET /api/clients/all`, `POST /api/clients`, `PUT /api/clients/{id}`, `DELETE /api/clients/{id}` |
+| **Inventory** | `GET /api/inventory`, `PUT /api/inventory/{id}` |
+| **Orders** | `GET /api/orders`, `POST /api/orders`, `PUT /api/orders/{id}`, `PATCH /api/orders/{id}/status`, `DELETE /api/orders/{id}` |
+
+### Starting the Laravel Backend
+
+If you haven't started the Laravel backend yet:
+
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Install dependencies
+composer install
+
+# Run migrations
+php artisan migrate
+
+# Start the server
+php artisan serve
+```
+
+The backend should now be accessible at `http://localhost:8000`.
+
+<Note>
+  Refer to the backend documentation for detailed setup instructions including database configuration and seeding.
+</Note>
+
+## Project Structure After Installation
+
+After installation, your project directory should look like this:
+
+```
+frontend/
+├── node_modules/        # Installed dependencies (git-ignored)
+├── public/              # Static assets
+├── src/                 # Source code
+│   ├── application/     # Business logic hooks
+│   ├── domain/          # Domain types
+│   ├── infrastructure/  # API services
+│   ├── ui/              # Components and pages
+│   ├── App.jsx          # Main app component
+│   ├── main.jsx         # Entry point
+│   └── index.css        # Global styles
+├── .gitignore
+├── eslint.config.js     # ESLint configuration
+├── index.html           # HTML template
+├── package.json         # Dependencies and scripts
+├── package-lock.json    # Dependency lock file
+├── postcss.config.js    # PostCSS configuration
+├── tailwind.config.js   # Tailwind CSS configuration
+├── vite.config.js       # Vite configuration
+└── README.md            # Project documentation
+```
+
+## Available npm Scripts
+
+The `package.json` file includes the following scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  }
+}
+```
+
+### Script Details
+
+<Tabs>
+  <Tab title="dev">
+    **Development Server**
+    
+    ```bash
+    npm run dev
+    ```
+    
+    Starts the Vite development server with hot module replacement (HMR) at `http://localhost:5173`.
+    
+    Use this for active development. Changes are reflected instantly in the browser.
+  </Tab>
+  
+  <Tab title="build">
+    **Production Build**
+    
+    ```bash
+    npm run build
+    ```
+    
+    Creates an optimized production build in the `dist/` directory.
+    
+    - Minifies JavaScript and CSS
+    - Optimizes assets
+    - Generates source maps
+    - Bundles all modules
+    
+    Output is ready for deployment to a production server.
+  </Tab>
+  
+  <Tab title="lint">
+    **Code Linting**
+    
+    ```bash
+    npm run lint
+    ```
+    
+    Runs ESLint to check for code quality issues and potential bugs.
+    
+    Configured with:
+    - React hooks rules
+    - React refresh rules
+    - ES2020+ syntax support
+  </Tab>
+  
+  <Tab title="preview">
+    **Preview Production Build**
+    
+    ```bash
+    npm run preview
+    ```
+    
+    Serves the production build locally for testing.
+    
+    Run `npm run build` first, then use this command to preview the optimized version.
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+### Port Already in Use
+
+If port 5173 is already in use:
+
+```bash
+Error: Port 5173 is already in use
+```
+
+**Solution:** Kill the process using the port or specify a different port:
+
+```bash
+npm run dev -- --port 3000
+```
+
+### Module Not Found Errors
+
+If you see errors about missing modules:
+
+```bash
+Error: Cannot find module 'react'
+```
+
+**Solution:** Delete `node_modules` and reinstall:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Network Errors
+
+If the application shows "Failed to fetch" errors:
+
+```bash
+GET http://localhost:8000/api/products net::ERR_CONNECTION_REFUSED
+```
+
+**Solution:** Ensure the Laravel backend is running:
+
+```bash
+# In the backend directory
+php artisan serve
+```
+
+### CORS Errors
+
+If you see CORS-related errors in the browser console:
+
+```bash
+Access to XMLHttpRequest at 'http://localhost:8000/api/products' from origin 'http://localhost:5173' has been blocked by CORS policy
+```
+
+**Solution:** Configure CORS in the Laravel backend. Add to `config/cors.php`:
+
+```php
+'allowed_origins' => ['http://localhost:5173'],
+```
+
+<Warning>
+  Never disable CORS completely in production. Always configure specific allowed origins.
+</Warning>
+
+## Next Steps
+
+Now that FrontendPT is installed and running:
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure API endpoints and customize settings
+  </Card>
+  
+  <Card title="Introduction" icon="book" href="/introduction">
+    Learn about FrontendPT's features and architecture
+  </Card>
+</CardGroup>

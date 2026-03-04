@@ -1,97 +1,214 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: FrontendPT Documentation
+description: Complete documentation for the React + Vite frontend application for managing products, clients, inventory, and orders
+mode: "custom"
 ---
 
-## Setting up
+<div className="relative overflow-hidden bg-gradient-to-br from-[#94cb04] to-[#7aa503] dark:from-[#1a1d27] dark:to-[#0f1117] py-20">
+  <div className="max-w-7xl mx-auto px-6 lg:px-8">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-5xl sm:text-6xl font-bold text-white dark:text-gray-100 mb-6">
+          Welcome to FrontendPT
+        </h1>
+        <p className="text-xl text-white/90 dark:text-gray-300 max-w-2xl mb-8">
+          Build powerful management applications with React, Vite, and clean architecture. 
+          Manage products, clients, inventory, and orders with a modern, maintainable codebase.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a 
+            href="/introduction" 
+            className="inline-flex items-center px-6 py-3 bg-white dark:bg-[#1a1d27] text-[#94cb04] dark:text-[#94cb04] font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-[#242838] transition-colors no-underline"
+          >
+            Get Started
+            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+          <a 
+            href="/api/hooks/use-products" 
+            className="inline-flex items-center px-6 py-3 border-2 border-white/30 dark:border-gray-700 bg-white/10 dark:bg-white/5 text-white dark:text-gray-100 font-semibold rounded-lg hover:bg-white/20 dark:hover:bg-white/10 hover:border-white/50 dark:hover:border-gray-600 transition-colors no-underline"
+          >
+            API Reference
+            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+      </div>
+      <div className="lg:col-span-5 hidden lg:block">
+        <div className="relative">
+          <div className="absolute inset-0 bg-white/10 dark:bg-white/5 rounded-2xl backdrop-blur-sm"></div>
+          <div className="relative p-8 text-white dark:text-gray-300">
+            <div className="font-mono text-sm">
+              <div className="text-gray-200 dark:text-gray-400">// Clean architecture</div>
+              <div className="mt-2">
+                <span className="text-yellow-300">import</span> {`{ useProducts }`} <span className="text-yellow-300">from</span> <span className="text-green-300">'./hooks'</span>
+              </div>
+              <div className="mt-4">
+                <span className="text-purple-300">function</span> <span className="text-blue-300">ProductsPage</span>() {`{`}
+              </div>
+              <div className="ml-4 mt-2">
+                <span className="text-yellow-300">const</span> {`{ products, loading }`} = <span className="text-blue-300">useProducts</span>()
+              </div>
+              <div className="ml-4 mt-2 text-gray-200 dark:text-gray-400">// Manage state & API calls</div>
+              <div className="mt-2">{`}`}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Quick start</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Get your development environment up and running in minutes
+  </p>
+  
+  <Steps>
+    <Step title="Clone and install dependencies">
+      Clone the repository and install all required packages.
+      
+      ```bash
+      git clone https://github.com/Sunshide12/FrontendPT.git
+      cd FrontendPT
+      npm install
+      ```
+    </Step>
+    
+    <Step title="Configure the API endpoint">
+      Set the backend API URL in `src/infrastructure/api.js`:
+      
+      ```javascript
+      const api = axios.create({
+        baseURL: "http://localhost:8000/api",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      ```
+      
+      <Note>Make sure your Laravel backend is running on the specified port</Note>
+    </Step>
+    
+    <Step title="Start the development server">
+      Launch the Vite development server:
+      
+      ```bash
+      npm run dev
+      ```
+      
+      Your application will be available at `http://localhost:5173`
+    </Step>
+    
+    <Step title="Build for production">
+      When you're ready to deploy:
+      
+      ```bash
+      npm run build
+      ```
+      
+      The optimized build will be in the `dist` directory.
+    </Step>
+  </Steps>
+</div>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Core features</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Everything you need to build a modern management application
+  </p>
+  
+  <CardGroup cols={3}>
+    <Card title="Product management" icon="box" href="/modules/products">
+      CRUD operations with search, pagination, and category filtering
+    </Card>
+    <Card title="Client management" icon="users" href="/modules/clients">
+      Manage customer information with full CRUD support
+    </Card>
+    <Card title="Inventory control" icon="warehouse" href="/modules/inventory">
+      Track and adjust stock levels with real-time updates
+    </Card>
+    <Card title="Order system" icon="shopping-cart" href="/modules/orders">
+      Create and manage orders with multi-product selection
+    </Card>
+    <Card title="Clean architecture" icon="layer-group" href="/architecture/overview">
+      Domain, application, infrastructure, and UI layers
+    </Card>
+    <Card title="Custom hooks" icon="code" href="/api/hooks/use-products">
+      Reusable React hooks for state management
+    </Card>
+  </CardGroup>
+</div>
 
-## Make it yours
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Explore the documentation</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Dive deep into the architecture, modules, and API
+  </p>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <a href="/architecture/overview" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] overflow-hidden hover:border-[#94cb04] dark:hover:border-[#94cb04] transition-colors no-underline">
+      <div className="h-40 bg-gradient-to-br from-[#94cb04]/20 to-[#7aa503]/20 dark:from-[#94cb04]/10 dark:to-[#7aa503]/10 flex items-center justify-center">
+        <svg className="w-16 h-16 text-[#94cb04]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Architecture guide</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Learn about the clean architecture pattern and project structure
+        </p>
+        <div className="flex items-center text-sm font-medium text-[#94cb04] group-hover:text-[#7aa503]">
+          Explore architecture
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+    
+    <a href="/components/modal" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] overflow-hidden hover:border-[#94cb04] dark:hover:border-[#94cb04] transition-colors no-underline">
+      <div className="h-40 bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-500/10 dark:to-purple-500/10 flex items-center justify-center">
+        <svg className="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+        </svg>
+      </div>
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">UI components</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Reusable components built with React and TailwindCSS
+        </p>
+        <div className="flex items-center text-sm font-medium text-[#94cb04] group-hover:text-[#7aa503]">
+          View components
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="rounded-2xl bg-gradient-to-r from-[#94cb04] to-[#7aa503] dark:from-[#1a1d27] dark:to-[#0f1117] p-8 md:p-12 border-2 border-[#94cb04] dark:border-[#94cb04]/30">
+    <h2 className="text-3xl font-bold text-white dark:text-gray-100 mb-4">
+      Ready to get started?
+    </h2>
+    <p className="text-lg text-white/90 dark:text-gray-300 mb-6 max-w-2xl">
+      Follow our installation guide to set up your development environment and start building your management application.
+    </p>
+    <a 
+      href="/installation" 
+      className="inline-flex items-center px-6 py-3 bg-white dark:bg-[#1a1d27] text-[#94cb04] dark:text-[#94cb04] font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-[#242838] transition-colors no-underline"
+    >
+      Installation guide
+      <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+  </div>
+</div>

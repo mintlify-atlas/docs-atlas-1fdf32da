@@ -1,0 +1,219 @@
+---
+title: useClients
+description: React hook for managing client data with pagination, search, and CRUD operations
+---
+
+## Overview
+
+The `useClients` hook provides a complete interface for managing clients in the FrontendPT application. It handles fetching paginated client lists, searching, and performing CRUD operations on client records.
+
+## Function Signature
+
+```javascript
+function useClients(): UseClientsReturn
+```
+
+## Return Value
+
+The hook returns an object with the following properties:
+
+<ResponseField name="clients" type="array">
+  Array of client objects for the current page. Updated based on pagination and search filters.
+</ResponseField>
+
+<ResponseField name="allClients" type="array">
+  Complete list of all clients without pagination. Useful for dropdowns and client selection in orders.
+</ResponseField>
+
+<ResponseField name="pagination" type="object | null">
+  Pagination metadata object containing:
+  - `current_page`: Current page number
+  - `last_page`: Total number of pages
+  - `data`: Array of clients for current page
+  - Other pagination metadata from the API
+</ResponseField>
+
+<ResponseField name="loading" type="boolean">
+  Loading state indicator. `true` when fetching clients, `false` otherwise.
+</ResponseField>
+
+<ResponseField name="error" type="string | null">
+  Error message if client fetching fails. Returns "Error al cargar clientes" on error, `null` when no error.
+</ResponseField>
+
+<ResponseField name="search" type="string">
+  Current search query string for filtering clients.
+</ResponseField>
+
+<ResponseField name="setSearch" type="function">
+  Function to update the search query. Triggers a new fetch with the search filter.
+  
+  **Signature:** `(search: string) => void`
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number (1-based index).
+</ResponseField>
+
+<ResponseField name="setPage" type="function">
+  Function to change the current page. Triggers a new fetch for the specified page.
+  
+  **Signature:** `(page: number) => void`
+</ResponseField>
+
+<ResponseField name="addClient" type="function">
+  Async function to create a new client. Automatically refreshes the client list after creation.
+  
+  **Signature:** `(client: object) => Promise<void>`
+  
+  **Parameters:**
+  - `client`: Client object with required fields (name, email, phone, address, etc.)
+</ResponseField>
+
+<ResponseField name="editClient" type="function">
+  Async function to update an existing client. Automatically refreshes the client list after update.
+  
+  **Signature:** `(id: number, client: object) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Client ID to update
+  - `client`: Updated client data object
+</ResponseField>
+
+<ResponseField name="removeClient" type="function">
+  Async function to delete a client. Automatically refreshes the client list after deletion.
+  
+  **Signature:** `(id: number) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Client ID to delete
+</ResponseField>
+
+## Usage Example
+
+```javascript
+import { useClients } from "@/application/hooks/useClients";
+
+function ClientsPage() {
+  const {
+    clients,
+    allClients,
+    pagination,
+    loading,
+    error,
+    search,
+    setSearch,
+    page,
+    setPage,
+    addClient,
+    editClient,
+    removeClient,
+  } = useClients();
+
+  const handleCreateClient = async () => {
+    await addClient({
+      name: "John Doe",
+      email: "john.doe@example.com",
+      phone: "555-1234",
+      address: "123 Main St",
+    });
+  };
+
+  const handleUpdateClient = async (clientId) => {
+    await editClient(clientId, {
+      name: "John Smith",
+      email: "john.smith@example.com",
+    });
+  };
+
+  const handleDeleteClient = async (clientId) => {
+    await removeClient(clientId);
+  };
+
+  if (loading) return <div>Loading clients...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search clients..."
+      />
+
+      <button onClick={handleCreateClient}>Add Client</button>
+
+      <div>
+        {clients.map((client) => (
+          <div key={client.id}>
+            <h3>{client.name}</h3>
+            <p>Email: {client.email}</p>
+            <p>Phone: {client.phone}</p>
+            <p>Address: {client.address}</p>
+            <button onClick={() => handleUpdateClient(client.id)}>
+              Edit
+            </button>
+            <button onClick={() => handleDeleteClient(client.id)}>
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination?.current_page} of {pagination?.last_page}
+        </span>
+        <button
+          disabled={page === pagination?.last_page}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Using All Clients in a Dropdown
+
+```javascript
+import { useClients } from "@/application/hooks/useClients";
+
+function OrderForm() {
+  const { allClients, loading } = useClients();
+  const [selectedClient, setSelectedClient] = useState("");
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <form>
+      <label htmlFor="client">Client:</label>
+      <select
+        id="client"
+        value={selectedClient}
+        onChange={(e) => setSelectedClient(e.target.value)}
+      >
+        <option value="">Select a client</option>
+        {allClients.map((client) => (
+          <option key={client.id} value={client.id}>
+            {client.name}
+          </option>
+        ))}
+      </select>
+    </form>
+  );
+}
+```
+
+## Source Code
+
+Location: `src/application/hooks/useClients.js:4`

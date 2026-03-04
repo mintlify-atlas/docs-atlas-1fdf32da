@@ -1,0 +1,298 @@
+---
+title: Category Service
+description: API reference for category management operations including listing, creating, updating, and deleting categories
+---
+
+The Category Service provides functions for managing product categories in the FrontendPT application. All functions interact with the Laravel backend API at `http://localhost:8000/api`.
+
+## Functions
+
+### getCategories
+
+Retrieves all categories.
+
+```javascript
+getCategories()
+```
+
+**API Endpoint:** `GET /api/categories`
+
+**Returns:**
+<ResponseField name="categories" type="array">
+  Array of all category objects
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getCategories } from './infrastructure/categoryService';
+
+const categories = await getCategories();
+categories.forEach(cat => {
+  console.log(`${cat.id}: ${cat.name}`);
+});
+```
+
+**Example Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Electronics",
+    "created_at": "2026-01-15T08:00:00.000000Z",
+    "updated_at": "2026-01-15T08:00:00.000000Z"
+  },
+  {
+    "id": 2,
+    "name": "Clothing",
+    "created_at": "2026-01-15T08:05:00.000000Z",
+    "updated_at": "2026-01-15T08:05:00.000000Z"
+  },
+  {
+    "id": 3,
+    "name": "Accessories",
+    "created_at": "2026-01-15T08:10:00.000000Z",
+    "updated_at": "2026-01-15T08:10:00.000000Z"
+  }
+]
+```
+
+---
+
+### createCategory
+
+Creates a new category.
+
+```javascript
+createCategory(name)
+```
+
+<ParamField path="name" type="string" required>
+  The name of the category to create
+</ParamField>
+
+**API Endpoint:** `POST /api/categories`
+
+**Request Body:**
+```json
+{
+  "name": "Category Name"
+}
+```
+
+**Returns:**
+<ResponseField name="category" type="object">
+  The newly created category object with ID assigned
+  
+  <ResponseField name="id" type="number">
+    Unique category identifier
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Category name
+  </ResponseField>
+  
+  <ResponseField name="created_at" type="string">
+    Timestamp when category was created
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Timestamp when category was last updated
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { createCategory } from './infrastructure/categoryService';
+
+const newCategory = await createCategory("Home & Garden");
+console.log(`Created category with ID: ${newCategory.id}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 8,
+  "name": "Home & Garden",
+  "created_at": "2026-03-04T10:30:00.000000Z",
+  "updated_at": "2026-03-04T10:30:00.000000Z"
+}
+```
+
+---
+
+### updateCategory
+
+Updates an existing category's name.
+
+```javascript
+updateCategory(id, name)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the category to update
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  The new name for the category
+</ParamField>
+
+**API Endpoint:** `PUT /api/categories/{id}`
+
+**Request Body:**
+```json
+{
+  "name": "Updated Category Name"
+}
+```
+
+**Returns:**
+<ResponseField name="category" type="object">
+  The updated category object
+  
+  <ResponseField name="id" type="number">
+    Category identifier
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Updated category name
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Timestamp when category was updated
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { updateCategory } from './infrastructure/categoryService';
+
+const updatedCategory = await updateCategory(8, "Home, Garden & DIY");
+console.log(`Category renamed to: ${updatedCategory.name}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 8,
+  "name": "Home, Garden & DIY",
+  "created_at": "2026-03-04T10:30:00.000000Z",
+  "updated_at": "2026-03-04T11:45:00.000000Z"
+}
+```
+
+---
+
+### deleteCategory
+
+Deletes a category by ID.
+
+```javascript
+deleteCategory(id)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the category to delete
+</ParamField>
+
+**API Endpoint:** `DELETE /api/categories/{id}`
+
+**Returns:**
+<ResponseField name="void" type="void">
+  No return value (void)
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { deleteCategory } from './infrastructure/categoryService';
+
+try {
+  await deleteCategory(8);
+  console.log('Category deleted successfully');
+} catch (error) {
+  console.error('Failed to delete category:', error);
+}
+```
+
+**Notes:**
+- Deleting a category may fail if products are still associated with it
+- Check backend constraints before deletion
+
+## Import
+
+```javascript
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory
+} from './infrastructure/categoryService';
+```
+
+## Base API Configuration
+
+All requests are made using axios with the following configuration:
+- **Base URL:** `http://localhost:8000/api`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+## Common Use Cases
+
+### Building a Category Dropdown
+
+```javascript
+import { getCategories } from './infrastructure/categoryService';
+
+const CategoryDropdown = () => {
+  const [categories, setCategories] = useState([]);
+  
+  useEffect(() => {
+    const loadCategories = async () => {
+      const cats = await getCategories();
+      setCategories(cats);
+    };
+    loadCategories();
+  }, []);
+  
+  return (
+    <select>
+      <option value="">All Categories</option>
+      {categories.map(cat => (
+        <option key={cat.id} value={cat.id}>
+          {cat.name}
+        </option>
+      ))}
+    </select>
+  );
+};
+```
+
+### Category Management Flow
+
+```javascript
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory
+} from './infrastructure/categoryService';
+
+// Load all categories
+const categories = await getCategories();
+
+// Create a new category
+const newCat = await createCategory("Sports Equipment");
+
+// Update the category name
+const updated = await updateCategory(newCat.id, "Sports & Outdoors");
+
+// Delete the category
+await deleteCategory(updated.id);
+```

@@ -1,0 +1,184 @@
+---
+title: Domain Types
+description: Type creator functions for Product, Category, and Client domain objects
+---
+
+The domain types module provides factory functions to create standardized domain objects with consistent structure and type coercion. These functions ensure data consistency across the application.
+
+## createProduct
+
+Creates a Product domain object from raw data. This function normalizes product data and ensures the price is properly parsed as a float.
+
+```javascript
+import { createProduct } from './domain/types';
+
+const product = createProduct({
+  id: 1,
+  name: "Laptop",
+  price: "999.99",
+  stock: 15,
+  category_id: 2,
+  category: { id: 2, name: "Electronics" }
+});
+```
+
+### Parameters
+
+<ParamField path="data" type="object" required>
+  Raw product data object
+</ParamField>
+
+<ParamField path="data.id" type="number" required>
+  Unique identifier for the product
+</ParamField>
+
+<ParamField path="data.name" type="string" required>
+  Product name
+</ParamField>
+
+<ParamField path="data.price" type="string | number" required>
+  Product price (will be converted to float)
+</ParamField>
+
+<ParamField path="data.stock" type="number" required>
+  Available stock quantity
+</ParamField>
+
+<ParamField path="data.category_id" type="number" required>
+  Foreign key reference to the product's category
+</ParamField>
+
+<ParamField path="data.category" type="object | null">
+  Optional nested category object. Defaults to null if not provided.
+</ParamField>
+
+### Returns
+
+<ResponseField name="id" type="number">
+  Unique identifier for the product
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Product name
+</ResponseField>
+
+<ResponseField name="price" type="number">
+  Product price as a parsed float value
+</ResponseField>
+
+<ResponseField name="stock" type="number">
+  Available stock quantity
+</ResponseField>
+
+<ResponseField name="category_id" type="number">
+  Foreign key reference to the product's category
+</ResponseField>
+
+<ResponseField name="category" type="object | null">
+  Nested category object or null if not provided
+</ResponseField>
+
+---
+
+## createCategory
+
+Creates a Category domain object from raw data.
+
+```javascript
+import { createCategory } from './domain/types';
+
+const category = createCategory({
+  id: 2,
+  name: "Electronics"
+});
+```
+
+### Parameters
+
+<ParamField path="data" type="object" required>
+  Raw category data object
+</ParamField>
+
+<ParamField path="data.id" type="number" required>
+  Unique identifier for the category
+</ParamField>
+
+<ParamField path="data.name" type="string" required>
+  Category name
+</ParamField>
+
+### Returns
+
+<ResponseField name="id" type="number">
+  Unique identifier for the category
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Category name
+</ResponseField>
+
+---
+
+## createClient
+
+Creates a Client domain object from raw data.
+
+```javascript
+import { createClient } from './domain/types';
+
+const client = createClient({
+  id: 42,
+  name: "John Doe",
+  email: "john.doe@example.com",
+  phone: "+1-555-0123"
+});
+```
+
+### Parameters
+
+<ParamField path="data" type="object" required>
+  Raw client data object
+</ParamField>
+
+<ParamField path="data.id" type="number" required>
+  Unique identifier for the client
+</ParamField>
+
+<ParamField path="data.name" type="string" required>
+  Client's full name
+</ParamField>
+
+<ParamField path="data.email" type="string" required>
+  Client's email address
+</ParamField>
+
+<ParamField path="data.phone" type="string" required>
+  Client's phone number
+</ParamField>
+
+### Returns
+
+<ResponseField name="id" type="number">
+  Unique identifier for the client
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Client's full name
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Client's email address
+</ResponseField>
+
+<ResponseField name="phone" type="string">
+  Client's phone number
+</ResponseField>
+
+---
+
+## Usage Notes
+
+- All creator functions follow a consistent pattern: they accept a data object and return a normalized domain object
+- `createProduct` specifically parses the price field using `parseFloat()` to ensure numeric consistency
+- The category field in products uses the nullish coalescing operator (`??`) to default to `null` when not provided
+- These functions mirror the field structure returned by the backend API

@@ -1,0 +1,562 @@
+---
+title: 'Orders Module'
+description: 'Complete order management system - create orders, track status, and manage customer purchases'
+---
+
+## Overview
+
+The Orders module is the most complex module in FrontendPT, handling the complete order lifecycle from creation to completion. It integrates with Clients, Products, and Inventory modules to provide a comprehensive order management system with automatic stock validation and tracking.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Multi-Product Orders" icon="cart-shopping">
+    Create orders with multiple products and quantities in a single transaction.
+  </Card>
+  <Card title="Status Workflow" icon="arrows-spin">
+    Track orders through pending, completed, and cancelled states.
+  </Card>
+  <Card title="Stock Validation" icon="shield-check">
+    Automatic stock checking and deduction when orders are created.
+  </Card>
+  <Card title="Real-time Totals" icon="calculator">
+    Dynamic total calculation as products are added to the order.
+  </Card>
+</CardGroup>
+
+## User Interface
+
+The Orders page (`src/ui/pages/orders/OrdersPage.jsx`) provides:
+
+- **Header**: Page title with "+ Nuevo pedido" action button
+- **Search Bar**: Filter orders by client name
+- **Orders Table**: Complete order information with inline status updates
+- **Create Modal**: Multi-step form for building orders
+- **Status Dropdown**: Change order status directly in the table
+- **Product Details**: Expandable product list for each order
+
+### Table Structure
+
+```jsx
+<thead>
+  <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
+    <th className="text-left px-4 py-3">ID</th>
+    <th className="text-left px-4 py-3">Cliente</th>
+    <th className="text-left px-4 py-3">Fecha</th>
+    <th className="text-left px-4 py-3">Total</th>
+    <th className="text-left px-4 py-3">Estado</th>
+    <th className="text-left px-4 py-3">Productos</th>
+    <th className="text-left px-4 py-3">Acciones</th>
+  </tr>
+</thead>
+```
+
+## Order Status System
+
+Orders flow through three distinct states:
+
+<Tabs>
+  <Tab title="Pending">
+    **Pending** orders are newly created and awaiting processing.
+    
+    ```javascript
+    pending: { 
+      label: "Pendiente", 
+      color: "bg-yellow-100 text-yellow-600 border border-yellow-200" 
+    }
+    ```
+    
+    - Stock has been reserved
+    - Can be cancelled (stock restored)
+    - Can be completed
+  </Tab>
+  <Tab title="Completed">
+    **Completed** orders have been fulfilled and delivered.
+    
+    ```javascript
+    completed: { 
+      label: "Completado", 
+      color: "bg-green-100 text-green-600 border border-green-200" 
+    }
+    ```
+    
+    - Stock permanently reduced
+    - Cannot be cancelled
+    - Final state for successful orders
+  </Tab>
+  <Tab title="Cancelled">
+    **Cancelled** orders have been voided.
+    
+    ```javascript
+    cancelled: { 
+      label: "Cancelado", 
+      color: "bg-red-100 text-red-400 border border-red-200" 
+    }
+    ```
+    
+    - Stock restored if order was pending
+    - Cannot be completed
+    - Final state for cancelled orders
+  </Tab>
+</Tabs>
+
+## Developer Usage
+
+### Using the Orders Hook
+
+```javascript
+import { useOrders } from "../../../application/hooks/useOrders";
+
+function MyComponent() {
+  const {
+    orders,          // Current page orders
+    pagination,      // Pagination metadata
+    loading,         // Loading state
+    search,          // Current search term
+    setSearch,       // Update search
+    page,            // Current page number
+    setPage,         // Change page
+    addOrder,        // Create order
+    changeStatus,    // Update order status
+    removeOrder      // Delete order
+  } = useOrders();
+
+  return (
+    // Your component JSX
+  );
+}
+```
+
+### Hook Implementation
+
+<Tabs>
+  <Tab title="Hook Source">
+    ```javascript src/application/hooks/useOrders.js
+    import { useState, useEffect, useCallback } from "react";
+    import * as orderService from "../../infrastructure/orderSrevice";
+
+    export function useOrders() {
+      const [orders, setOrders] = useState([]);
+      const [pagination, setPagination] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [search, setSearch] = useState("");
+      const [page, setPage] = useState(1);
+
+      const fetchOrders = useCallback(async () => {
+        try {
+          setLoading(true);
+          const data = await orderService.getOrders(page, search);
+          setOrders(data.orders.data);
+          setPagination(data.orders);
+        } catch (err) {
+          console.error("Error al cargar pedidos", err);
+        } finally {
+          setLoading(false);
+        }
+      }, [page, search]);
+
+      useEffect(() => {
+        fetchOrders();
+      }, [fetchOrders]);
+
+      const addOrder = async order => {
+        await orderService.createOrder(order);
+        fetchOrders();
+      };
+
+      const changeStatus = async (id, status) => {
+        await orderService.updateOrderStatus(id, status);
+        fetchOrders();
+      };
+
+      const removeOrder = async id => {
+        await orderService.deleteOrder(id);
+        fetchOrders();
+      };
+
+      return {
+        orders,
+        pagination,
+        loading,
+        search,
+        setSearch,
+        page,
+        setPage,
+        addOrder,
+        changeStatus,
+        removeOrder,
+      };
+    }
+    ```
+  </Tab>
+  <Tab title="Service Layer">
+    ```javascript src/infrastructure/orderSrevice.js
+    import api from "./api";
+
+    export const getOrders = async (page = 1, search = "") => {
+      const params = { page };
+      if (search) params.search = search;
+      const { data } = await api.get("/orders", { params });
+      return data;
+    };
+
+    export const createOrder = async order => {
+      const { data } = await api.post("/orders", order);
+      return data.order;
+    };
+
+    export const updateOrderStatus = async (id, status) => {
+      const { data } = await api.put(`/orders/${id}`, { status });
+      return data.order;
+    };
+
+    export const deleteOrder = async id => {
+      await api.delete(`/orders/${id}`);
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Creating Orders
+
+### Order Creation Flow
+
+<Steps>
+  <Step title="Open Create Modal">
+    Click "+ Nuevo pedido" to open the order creation form.
+  </Step>
+  <Step title="Select Client">
+    Choose a client from the dropdown. All clients from `allClients` are available.
+  </Step>
+  <Step title="Add Products">
+    Select products and quantities. The form shows available stock for each product.
+  </Step>
+  <Step title="Add More Products">
+    Click "+ Agregar producto" to add additional line items.
+  </Step>
+  <Step title="Review Total">
+    The total is calculated in real-time as products and quantities change.
+  </Step>
+  <Step title="Confirm Order">
+    Click "Confirmar pedido" to create the order and deduct stock.
+  </Step>
+</Steps>
+
+### Dynamic Line Items
+
+```javascript
+const [items, setItems] = useState([{ productId: "", quantity: 1 }]);
+
+const addItem = () => {
+  setItems(prev => [...prev, { productId: "", quantity: 1 }]);
+};
+
+const removeItem = index => {
+  setItems(prev => prev.filter((_, i) => i !== index));
+};
+
+const updateItem = (index, field, value) => {
+  setItems(prev => 
+    prev.map((item, i) => 
+      (i === index ? { ...item, [field]: value } : item)
+    )
+  );
+};
+```
+
+### Real-time Total Calculation
+
+```javascript
+const total = items.reduce((accumulator, item) => {
+  const product = allProducts.find(p => p.id === Number(item.productId));
+  if (!product || !item.quantity) return accumulator;
+  return accumulator + parseFloat(product.price) * Number(item.quantity);
+}, 0);
+
+// Display in UI
+{total > 0 && (
+  <div className="bg-gray-50 rounded-lg px-4 py-3 text-sm">
+    <span className="text-gray-500">Total estimado: </span>
+    <span className="font-bold text-gray-800">${total.toFixed(2)}</span>
+  </div>
+)}
+```
+
+## Status Management
+
+### Inline Status Updates
+
+Orders can be updated directly from the table:
+
+```javascript
+<select 
+  value={order.status} 
+  onChange={e => changeStatus(order.id, e.target.value)}
+  className={`text-xs font-semibold px-2 py-1 rounded cursor-pointer ${status.color}`}
+>
+  <option value="pending">Pendiente</option>
+  <option value="completed">Completado</option>
+  <option value="cancelled">Cancelado</option>
+</select>
+```
+
+<Warning>
+  The backend validates status transitions. For example, you cannot change a cancelled order back to pending. Invalid transitions will return an error message.
+</Warning>
+
+## Data Structure
+
+### Order Object
+
+```typescript
+interface Order {
+  id: number;
+  client_id: number;
+  date: string;          // ISO date format
+  total: string;         // Decimal string
+  status: 'pending' | 'completed' | 'cancelled';
+  client?: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  order_details?: OrderDetail[];
+}
+
+interface OrderDetail {
+  id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  price: string;         // Price at time of order
+  product?: {
+    id: number;
+    name: string;
+  };
+}
+```
+
+### Create Order Payload
+
+```typescript
+interface CreateOrderPayload {
+  client_id: number;
+  products: {
+    id: number;
+    quantity: number;
+  }[];
+}
+```
+
+## API Endpoints
+
+| Method | Endpoint | Parameters | Description |
+|--------|----------|------------|-------------|
+| GET | `/orders` | `page`, `search` | Paginated orders (search by client) |
+| POST | `/orders` | Order payload | Create order with products |
+| PUT | `/orders/:id` | `{ status: string }` | Update order status |
+| DELETE | `/orders/:id` | - | Delete order (may restore stock) |
+
+## Stock Integration
+
+### Automatic Stock Deduction
+
+When an order is created:
+
+1. Backend validates stock availability for all products
+2. If sufficient stock exists, quantities are deducted
+3. Order is created with status "pending"
+4. If insufficient stock, error is returned
+
+```javascript
+try {
+  await addOrder({
+    client_id: clientId,
+    products: items.map(i => ({ 
+      id: Number(i.productId), 
+      quantity: Number(i.quantity) 
+    })),
+  });
+  showToast("Pedido creado correctamente");
+} catch (err) {
+  // Backend returns specific error for insufficient stock
+  const msg = err.response?.data?.message ?? "Error al crear pedido";
+  setFormError(msg);
+  showToast(msg, "error");
+}
+```
+
+### Stock Restoration
+
+Stock is restored when:
+
+- A pending order is cancelled
+- A pending order is deleted
+
+<Warning>
+  Deleting completed orders does NOT restore stock. The system assumes completed orders represent delivered goods.
+</Warning>
+
+## Validation Rules
+
+### Order Creation
+
+<CardGroup cols={2}>
+  <Card title="Client Required" icon="user">
+    Must select a client before submitting the order.
+  </Card>
+  <Card title="Products Required" icon="box">
+    At least one product with valid quantity must be included.
+  </Card>
+  <Card title="Stock Validation" icon="warehouse">
+    Backend validates sufficient stock for all products.
+  </Card>
+  <Card title="Positive Quantities" icon="hashtag">
+    All quantities must be greater than zero.
+  </Card>
+</CardGroup>
+
+```javascript
+const handleSubmit = async () => {
+  if (!clientId) {
+    setFormError("Selecciona un cliente");
+    return;
+  }
+  if (items.some(i => !i.productId || !i.quantity)) {
+    setFormError("Completa todos los productos");
+    return;
+  }
+  // Proceed with submission
+};
+```
+
+## Product Selection UI
+
+```jsx
+{items.map((item, index) => (
+  <div key={index} className="flex gap-2 items-center">
+    <select 
+      className="input flex-1" 
+      value={item.productId}
+      onChange={e => updateItem(index, "productId", e.target.value)}
+    >
+      <option value="">Producto</option>
+      {allProducts.map(p => (
+        <option key={p.id} value={p.id}>
+          {p.name} (stock: {p.stock})
+        </option>
+      ))}
+    </select>
+    <input 
+      type="number" 
+      min="1" 
+      className="input w-20" 
+      value={item.quantity}
+      onChange={e => updateItem(index, "quantity", e.target.value)}
+    />
+    {items.length > 1 && (
+      <button onClick={() => removeItem(index)}>
+        ×
+      </button>
+    )}
+  </div>
+))}
+```
+
+<Tip>
+  Stock levels are displayed in the product dropdown to help users make informed decisions.
+</Tip>
+
+## Order Deletion
+
+```javascript
+const handleDelete = async id => {
+  const order = orders.find(order => order.id === id);
+  const message = order?.status === "pending" 
+    ? "¿Eliminar este pedido? El stock será restaurado."
+    : "¿Eliminar este pedido? Esta acción no se puede deshacer.";
+
+  if (!confirm(message)) return;
+  try {
+    await removeOrder(id);
+    showToast("Pedido eliminado correctamente");
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "No se pudo eliminar";
+    showToast(msg, "error");
+  }
+};
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use allProducts" icon="box-open">
+    Always use `allProducts` and `allClients` for dropdowns to avoid pagination issues.
+  </Card>
+  <Card title="Show Stock Levels" icon="eye">
+    Display available stock in product dropdowns to prevent order failures.
+  </Card>
+  <Card title="Real-time Totals" icon="calculator">
+    Calculate order totals dynamically for immediate feedback.
+  </Card>
+  <Card title="Clear Error Messages" icon="message">
+    Display backend error messages (like insufficient stock) clearly to users.
+  </Card>
+</CardGroup>
+
+## Error Handling
+
+Common errors and their handling:
+
+1. **Insufficient Stock**: Backend returns specific message
+2. **Invalid Client**: Validation error from backend
+3. **Invalid Status Transition**: Backend validates workflow
+4. **Product Not Found**: Handle missing product gracefully
+
+```javascript
+catch (err) {
+  const msg = err.response?.data?.message ?? "Error al crear pedido";
+  setFormError(msg);        // Show in modal
+  showToast(msg, "error");  // Show toast
+}
+```
+
+## Integration Points
+
+- **Clients Module**: Provides client data for order association
+- **Products Module**: Supplies product catalog and pricing
+- **Inventory Module**: Automatically updated when orders change status
+
+## Performance Considerations
+
+- Order details are populated with relationships (client, products)
+- Search queries filter by client name server-side
+- Pagination handles large order histories efficiently
+- Real-time total calculation is client-side for responsiveness
+
+## Advanced Features
+
+### Order Details Display
+
+Each order shows its constituent products:
+
+```jsx
+<td className="px-4 py-3 text-gray-500 text-xs">
+  {order.order_details?.map(d => (
+    <div key={d.id}>
+      {d.product?.name} x{d.quantity}
+    </div>
+  ))}
+</td>
+```
+
+### Status Badge Colors
+
+Different colors provide visual status indicators:
+
+- **Yellow**: Pending (action required)
+- **Green**: Completed (successful)
+- **Red**: Cancelled (voided)
+
+This color coding helps users quickly assess order states at a glance.

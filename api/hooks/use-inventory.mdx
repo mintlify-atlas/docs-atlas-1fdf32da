@@ -1,0 +1,224 @@
+---
+title: useInventory
+description: React hook for managing product inventory with pagination, search, and stock adjustment
+---
+
+## Overview
+
+The `useInventory` hook provides an interface for viewing and managing product inventory in the FrontendPT application. It handles fetching paginated inventory data, searching for products, and adjusting stock levels.
+
+## Function Signature
+
+```javascript
+function useInventory(): UseInventoryReturn
+```
+
+## Return Value
+
+The hook returns an object with the following properties:
+
+<ResponseField name="products" type="array">
+  Array of product objects with inventory information for the current page. Updated based on pagination and search filters.
+</ResponseField>
+
+<ResponseField name="pagination" type="object | null">
+  Pagination metadata object containing:
+  - `current_page`: Current page number
+  - `last_page`: Total number of pages
+  - `data`: Array of products for current page
+  - Other pagination metadata from the API
+</ResponseField>
+
+<ResponseField name="loading" type="boolean">
+  Loading state indicator. `true` when fetching inventory data, `false` otherwise.
+</ResponseField>
+
+<ResponseField name="search" type="string">
+  Current search query string for filtering inventory by product name or other attributes.
+</ResponseField>
+
+<ResponseField name="setSearch" type="function">
+  Function to update the search query. Triggers a new fetch with the search filter.
+  
+  **Signature:** `(search: string) => void`
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number (1-based index).
+</ResponseField>
+
+<ResponseField name="setPage" type="function">
+  Function to change the current page. Triggers a new fetch for the specified page.
+  
+  **Signature:** `(page: number) => void`
+</ResponseField>
+
+<ResponseField name="adjust" type="function">
+  Async function to adjust the stock level of a product. Automatically refreshes the inventory list after adjustment.
+  
+  **Signature:** `(id: number, stock: number) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Product ID to adjust
+  - `stock`: New stock quantity (absolute value, not a delta)
+</ResponseField>
+
+## Implementation Details
+
+<Note>
+  Unlike other hooks, `useInventory` does not have an error state property in its return value. Errors are logged to the console but not exposed to the component. This may be by design to prevent UI disruption for inventory viewing.
+</Note>
+
+## Usage Example
+
+```javascript
+import { useInventory } from "@/application/hooks/useInventory";
+
+function InventoryPage() {
+  const {
+    products,
+    pagination,
+    loading,
+    search,
+    setSearch,
+    page,
+    setPage,
+    adjust,
+  } = useInventory();
+
+  const handleAdjustStock = async (productId, newStock) => {
+    await adjust(productId, newStock);
+  };
+
+  const handleStockIncrease = async (product) => {
+    const newStock = product.stock + 10;
+    await adjust(product.id, newStock);
+  };
+
+  const handleStockDecrease = async (product) => {
+    const newStock = Math.max(0, product.stock - 10);
+    await adjust(product.id, newStock);
+  };
+
+  if (loading) return <div>Loading inventory...</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search inventory..."
+      />
+
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Current Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td>{product.name}</td>
+              <td>{product.stock}</td>
+              <td>
+                <button onClick={() => handleStockIncrease(product)}>
+                  +10
+                </button>
+                <button onClick={() => handleStockDecrease(product)}>
+                  -10
+                </button>
+                <input
+                  type="number"
+                  placeholder="New stock"
+                  onBlur={(e) => {
+                    const newStock = parseInt(e.target.value, 10);
+                    if (!isNaN(newStock) && newStock >= 0) {
+                      handleAdjustStock(product.id, newStock);
+                    }
+                  }}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div>
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination?.current_page} of {pagination?.last_page}
+        </span>
+        <button
+          disabled={page === pagination?.last_page}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Stock Adjustment with Validation
+
+```javascript
+import { useInventory } from "@/application/hooks/useInventory";
+import { useState } from "react";
+
+function StockAdjustmentForm({ productId, currentStock }) {
+  const { adjust } = useInventory();
+  const [newStock, setNewStock] = useState(currentStock);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (newStock < 0) {
+      alert("Stock cannot be negative");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await adjust(productId, newStock);
+      alert("Stock updated successfully");
+    } catch (error) {
+      alert("Failed to update stock");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        New Stock Quantity:
+        <input
+          type="number"
+          value={newStock}
+          onChange={(e) => setNewStock(parseInt(e.target.value, 10))}
+          min="0"
+          required
+        />
+      </label>
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Updating..." : "Update Stock"}
+      </button>
+    </form>
+  );
+}
+```
+
+## Source Code
+
+Location: `src/application/hooks/useInventory.js:4`

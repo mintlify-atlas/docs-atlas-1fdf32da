@@ -1,0 +1,556 @@
+---
+title: Configuration Guide
+description: Configure API endpoints, environment settings, and customize FrontendPT for your specific backend setup
+---
+
+# Configuration Guide
+
+This guide covers all configuration options for FrontendPT, including API endpoint setup, development settings, and build customization.
+
+## API Configuration
+
+The most important configuration is the backend API endpoint. FrontendPT needs to know where your Laravel backend is running.
+
+### Base URL Configuration
+
+The API base URL is configured in `src/infrastructure/api.js`:
+
+```javascript src/infrastructure/api.js
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://localhost:8000/api",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+export default api;
+```
+
+### Changing the Backend URL
+
+<Warning>
+  FrontendPT does **not** use environment variables for API configuration. You must edit the source file directly.
+</Warning>
+
+To connect to a different backend URL:
+
+<Steps>
+  <Step title="Open the API configuration file">
+    Navigate to and open `src/infrastructure/api.js` in your code editor.
+  </Step>
+  
+  <Step title="Update the baseURL">
+    Change the `baseURL` value to match your backend location:
+    
+    ```javascript
+    // For a backend on a different port
+    baseURL: "http://localhost:3000/api",
+    
+    // For a remote backend
+    baseURL: "https://api.example.com/api",
+    
+    // For a backend without /api prefix
+    baseURL: "http://localhost:8000",
+    ```
+  </Step>
+  
+  <Step title="Save and restart the dev server">
+    Save the file and restart the development server:
+    
+    ```bash
+    # Stop the current server (Ctrl+C)
+    # Then restart it
+    npm run dev
+    ```
+    
+    <Note>
+      The dev server will automatically reload when you save the file, but it's recommended to restart for API configuration changes.
+    </Note>
+  </Step>
+</Steps>
+
+### Common Backend URL Scenarios
+
+<Tabs>
+  <Tab title="Local Development">
+    **Default setup with Laravel backend on port 8000:**
+    
+    ```javascript
+    baseURL: "http://localhost:8000/api",
+    ```
+    
+    This is the default configuration when both frontend and backend run locally.
+  </Tab>
+  
+  <Tab title="Docker Setup">
+    **Backend running in Docker container:**
+    
+    ```javascript
+    // If using docker-compose with service name 'backend'
+    baseURL: "http://backend:8000/api",
+    
+    // Or with exposed port mapping
+    baseURL: "http://localhost:8080/api",
+    ```
+    
+    <Note>
+      Check your `docker-compose.yml` file for the correct service name and port mapping.
+    </Note>
+  </Tab>
+  
+  <Tab title="Production/Staging">
+    **Deployed backend on remote server:**
+    
+    ```javascript
+    // Production API
+    baseURL: "https://api.production.com/api",
+    
+    // Staging API
+    baseURL: "https://api.staging.com/api",
+    ```
+    
+    <Warning>
+      Always use HTTPS in production environments. Never expose unencrypted API endpoints.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Different Port">
+    **Backend running on non-standard port:**
+    
+    ```javascript
+    baseURL: "http://localhost:9000/api",
+    ```
+    
+    Useful when port 8000 is already in use or you have multiple Laravel applications running.
+  </Tab>
+</Tabs>
+
+### HTTP Headers Configuration
+
+The axios instance includes default headers for all requests:
+
+```javascript
+headers: {
+  "Content-Type": "application/json",
+  Accept: "application/json",
+}
+```
+
+These headers tell the backend to:
+- Expect JSON in request bodies (`Content-Type`)
+- Return JSON in responses (`Accept`)
+
+#### Adding Custom Headers
+
+To add authentication tokens or other custom headers:
+
+```javascript src/infrastructure/api.js
+const api = axios.create({
+  baseURL: "http://localhost:8000/api",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+  },
+});
+
+// Add authentication interceptor
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+```
+
+<Note>
+  The current version of FrontendPT does not include authentication. The above example shows how to add it if needed.
+</Note>
+
+## Vite Configuration
+
+Vite settings are defined in `vite.config.js`. The default configuration is minimal:
+
+```javascript vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})
+```
+
+### Customizing Vite Settings
+
+<Tabs>
+  <Tab title="Change Dev Port">
+    **Run development server on a different port:**
+    
+    ```javascript vite.config.js
+    export default defineConfig({
+      plugins: [react()],
+      server: {
+        port: 3000,
+        strictPort: true,  // Fail if port is already in use
+      },
+    })
+    ```
+  </Tab>
+  
+  <Tab title="Enable Network Access">
+    **Allow access from other devices on the network:**
+    
+    ```javascript vite.config.js
+    export default defineConfig({
+      plugins: [react()],
+      server: {
+        host: true,  // Listen on all addresses
+        port: 5173,
+      },
+    })
+    ```
+    
+    Useful for testing on mobile devices or other computers on your network.
+  </Tab>
+  
+  <Tab title="Configure Proxy">
+    **Proxy API requests to avoid CORS issues:**
+    
+    ```javascript vite.config.js
+    export default defineConfig({
+      plugins: [react()],
+      server: {
+        proxy: {
+          '/api': {
+            target: 'http://localhost:8000',
+            changeOrigin: true,
+          },
+        },
+      },
+    })
+    ```
+    
+    Then update `api.js`:
+    ```javascript
+    baseURL: "/api",  // Relative URL, proxied by Vite
+    ```
+  </Tab>
+  
+  <Tab title="Build Output">
+    **Customize build output directory:**
+    
+    ```javascript vite.config.js
+    export default defineConfig({
+      plugins: [react()],
+      build: {
+        outDir: 'build',  // Default is 'dist'
+        sourcemap: true,  // Generate source maps
+      },
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Tailwind CSS Configuration
+
+Tailwind is configured in `tailwind.config.js` with custom color definitions:
+
+```javascript tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx}"],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: "#10b981",  // Green-500
+          hover: "#059669",    // Green-600
+          light: "#d1fae5",    // Green-100
+        },
+      },
+    },
+  },
+  plugins: [],
+};
+```
+
+### Customizing Theme Colors
+
+The primary color scheme uses green (`#10b981`). To change this:
+
+```javascript tailwind.config.js
+theme: {
+  extend: {
+    colors: {
+      primary: {
+        DEFAULT: "#3b82f6",  // Blue-500
+        hover: "#2563eb",    // Blue-600
+        light: "#dbeafe",    // Blue-100
+      },
+      // Add more custom colors
+      secondary: {
+        DEFAULT: "#8b5cf6",  // Purple-500
+        hover: "#7c3aed",
+      },
+    },
+  },
+},
+```
+
+These colors are used throughout the application:
+- `primary` - Action buttons, active nav links
+- `primary-hover` - Button hover states
+- `primary-light` - Light backgrounds
+
+### Extending Tailwind
+
+Add custom utilities or extend the default theme:
+
+```javascript tailwind.config.js
+theme: {
+  extend: {
+    colors: { /* ... */ },
+    spacing: {
+      '128': '32rem',
+      '144': '36rem',
+    },
+    borderRadius: {
+      '4xl': '2rem',
+    },
+  },
+},
+plugins: [
+  require('@tailwindcss/forms'),  // Add form styles plugin
+],
+```
+
+## ESLint Configuration
+
+ESLint is configured in `eslint.config.js` with React-specific rules:
+
+```javascript eslint.config.js
+import js from '@eslint/js'
+import globals from 'globals'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    settings: { react: { version: '19.2' } },
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...react.configs.recommended.rules,
+      ...react.configs['jsx-runtime'].rules,
+      ...reactHooks.configs.recommended.rules,
+    },
+  },
+]
+```
+
+<Note>
+  The linting rules are already optimized for React 19 and modern JavaScript. Customization is typically not necessary.
+</Note>
+
+## Environment-Specific Configuration
+
+While FrontendPT doesn't use environment variables by default, you can add them for different deployment scenarios.
+
+### Adding Environment Variables
+
+<Steps>
+  <Step title="Create .env files">
+    Create environment-specific files in the project root:
+    
+    ```bash
+    # Development environment
+    .env.development
+    
+    # Production environment
+    .env.production
+    ```
+  </Step>
+  
+  <Step title="Define variables">
+    Add variables prefixed with `VITE_`:
+    
+    ```bash .env.development
+    VITE_API_BASE_URL=http://localhost:8000/api
+    VITE_APP_NAME=FrontendPT Dev
+    ```
+    
+    ```bash .env.production
+    VITE_API_BASE_URL=https://api.production.com/api
+    VITE_APP_NAME=FrontendPT
+    ```
+    
+    <Warning>
+      Only variables prefixed with `VITE_` are exposed to the application. Never store secrets in environment variables as they will be visible in the built code.
+    </Warning>
+  </Step>
+  
+  <Step title="Update api.js to use environment variables">
+    Modify `src/infrastructure/api.js`:
+    
+    ```javascript
+    import axios from "axios";
+    
+    const api = axios.create({
+      baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    
+    export default api;
+    ```
+  </Step>
+  
+  <Step title="Access variables in components">
+    Use `import.meta.env` to access variables:
+    
+    ```javascript
+    const appName = import.meta.env.VITE_APP_NAME;
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    ```
+  </Step>
+</Steps>
+
+### Built-in Environment Variables
+
+Vite provides several built-in variables:
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `import.meta.env.MODE` | Current mode (`development` or `production`) | `"development"` |
+| `import.meta.env.DEV` | Whether in development | `true` |
+| `import.meta.env.PROD` | Whether in production | `false` |
+| `import.meta.env.BASE_URL` | Base URL for the app | `"/"` |
+
+## Service Configuration
+
+Each module has its own service file in `src/infrastructure/`. These services use the configured API instance.
+
+### Product Service Example
+
+```javascript src/infrastructure/productService.js
+import api from "./api";
+
+export const getProducts = async (page = 1, search = "", category_id = "") => {
+  const params = { page, search };
+  if (category_id !== "") params.category_id = category_id;
+  
+  const { data } = await api.get("/products", { params });
+  return data;
+};
+
+export const createProduct = async product => {
+  const { data } = await api.post("/products", product);
+  return data.product;
+};
+```
+
+All services follow this pattern:
+1. Import the configured `api` instance
+2. Export async functions for each operation
+3. Use `api.get()`, `api.post()`, `api.put()`, `api.delete()`
+4. Return the relevant data from the response
+
+<Note>
+  Service files automatically inherit the base URL and headers from `api.js`. You only need to specify the endpoint path.
+</Note>
+
+## CORS Configuration
+
+If you encounter CORS errors, configure the Laravel backend to allow requests from your frontend.
+
+### Backend CORS Setup (Laravel)
+
+In your Laravel project, update `config/cors.php`:
+
+```php config/cors.php
+<?php
+
+return [
+    'paths' => ['api/*'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:5173',  // Vite dev server
+        'http://localhost:3000',  // Alternative port
+    ],
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
+    'exposed_headers' => [],
+    'max_age' => 0,
+    'supports_credentials' => false,
+];
+```
+
+For production:
+
+```php
+'allowed_origins' => [
+    'https://yourfrontend.com',
+],
+```
+
+<Warning>
+  Never use `'allowed_origins' => ['*']` in production. Always specify exact origins.
+</Warning>
+
+## Verification
+
+After configuration, verify everything works:
+
+<Steps>
+  <Step title="Start the development server">
+    ```bash
+    npm run dev
+    ```
+  </Step>
+  
+  <Step title="Check browser console">
+    Open browser DevTools (F12) and check the Console tab for errors.
+  </Step>
+  
+  <Step title="Check network requests">
+    Open the Network tab and verify API requests go to the correct URL.
+  </Step>
+  
+  <Step title="Test API connection">
+    Navigate to any page (Products, Clients, etc.) and verify data loads correctly.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Introduction" icon="book" href="/introduction">
+    Learn about FrontendPT's features and architecture
+  </Card>
+  
+  <Card title="Installation" icon="download" href="/installation">
+    Review installation steps if needed
+  </Card>
+</CardGroup>

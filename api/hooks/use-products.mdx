@@ -1,0 +1,185 @@
+---
+title: useProducts
+description: React hook for managing product data with pagination and CRUD operations
+---
+
+## Overview
+
+The `useProducts` hook provides a complete interface for managing products in the FrontendPT application. It handles fetching paginated product lists, searching, and performing CRUD operations on products.
+
+## Function Signature
+
+```javascript
+function useProducts(): UseProductsReturn
+```
+
+## Return Value
+
+The hook returns an object with the following properties:
+
+<ResponseField name="products" type="array">
+  Array of product objects for the current page. Updated based on pagination and search filters.
+</ResponseField>
+
+<ResponseField name="allProducts" type="array">
+  Complete list of all products without pagination. Useful for dropdowns and product selection.
+</ResponseField>
+
+<ResponseField name="pagination" type="object | null">
+  Pagination metadata object containing:
+  - `current_page`: Current page number
+  - `last_page`: Total number of pages
+  - `data`: Array of products for current page
+  - Other pagination metadata from the API
+</ResponseField>
+
+<ResponseField name="loading" type="boolean">
+  Loading state indicator. `true` when fetching products, `false` otherwise.
+</ResponseField>
+
+<ResponseField name="error" type="string | null">
+  Error message if product fetching fails. Returns "Error al cargar productos" on error, `null` when no error.
+</ResponseField>
+
+<ResponseField name="search" type="string">
+  Current search query string for filtering products.
+</ResponseField>
+
+<ResponseField name="setSearch" type="function">
+  Function to update the search query. Triggers a new fetch with the search filter.
+  
+  **Signature:** `(search: string) => void`
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number (1-based index).
+</ResponseField>
+
+<ResponseField name="setPage" type="function">
+  Function to change the current page. Triggers a new fetch for the specified page.
+  
+  **Signature:** `(page: number) => void`
+</ResponseField>
+
+<ResponseField name="addProduct" type="function">
+  Async function to create a new product. Automatically refreshes the product list after creation.
+  
+  **Signature:** `(product: object) => Promise<void>`
+  
+  **Parameters:**
+  - `product`: Product object with required fields (name, price, category, etc.)
+</ResponseField>
+
+<ResponseField name="editProduct" type="function">
+  Async function to update an existing product. Automatically refreshes the product list after update.
+  
+  **Signature:** `(id: number, product: object) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Product ID to update
+  - `product`: Updated product data object
+</ResponseField>
+
+<ResponseField name="removeProduct" type="function">
+  Async function to delete a product. Automatically refreshes the product list after deletion.
+  
+  **Signature:** `(id: number) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Product ID to delete
+</ResponseField>
+
+## Usage Example
+
+```javascript
+import { useProducts } from "@/application/hooks/useProducts";
+
+function ProductsPage() {
+  const {
+    products,
+    allProducts,
+    pagination,
+    loading,
+    error,
+    search,
+    setSearch,
+    page,
+    setPage,
+    addProduct,
+    editProduct,
+    removeProduct,
+  } = useProducts();
+
+  const handleCreateProduct = async () => {
+    await addProduct({
+      name: "New Product",
+      description: "Product description",
+      price: 29.99,
+      category_id: 1,
+      stock: 100,
+    });
+  };
+
+  const handleUpdateProduct = async (productId) => {
+    await editProduct(productId, {
+      name: "Updated Product Name",
+      price: 39.99,
+    });
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    await removeProduct(productId);
+  };
+
+  if (loading) return <div>Loading products...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search products..."
+      />
+
+      <div>
+        {products.map((product) => (
+          <div key={product.id}>
+            <h3>{product.name}</h3>
+            <p>Price: ${product.price}</p>
+            <button onClick={() => handleUpdateProduct(product.id)}>
+              Edit
+            </button>
+            <button onClick={() => handleDeleteProduct(product.id)}>
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination?.current_page} of {pagination?.last_page}
+        </span>
+        <button
+          disabled={page === pagination?.last_page}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+## Source Code
+
+Location: `src/application/hooks/useProducts.js:4`

@@ -1,0 +1,210 @@
+---
+title: Introduction to FrontendPT
+description: A comprehensive order management web application built with React, Vite, and TailwindCSS that consumes a Laravel REST API
+---
+
+# Introduction to FrontendPT
+
+FrontendPT is a modern web application for managing products, categories, clients, inventory, and orders. It provides a complete interface for creating orders by selecting clients and multiple products, controlling stock through the inventory module, and managing order status directly from the table view.
+
+## What is FrontendPT?
+
+FrontendPT is the frontend component of an order management system (Sistema de Gestión de Pedidos) that consumes a Laravel REST API backend. The application enables businesses to:
+
+- Manage product catalogs with prices and stock levels
+- Organize products into categories
+- Track client information and contact details
+- Monitor and adjust inventory in real-time
+- Create and process orders with automatic stock management
+- Change order status (pending, completed, cancelled) on-the-fly
+
+<Note>
+  FrontendPT requires a running Laravel backend API. The application communicates with the API endpoints to persist all data and business logic.
+</Note>
+
+## Key Features
+
+### Product Management
+- **Full CRUD operations** with search and server-side pagination
+- Category selector for product organization
+- Modal-based form with validation for required fields
+- Real-time price and stock tracking
+
+### Category Management
+- Complete CRUD operations with inline creation (no modal)
+- Edit functionality in modal view
+- Client-side pagination (all categories loaded for dropdown usage)
+
+### Client Management
+- Full CRUD with search and server-side pagination
+- Track client details: name, email, and phone number
+- Quick lookup for order creation
+
+### Inventory Control
+- Product listing with search and pagination
+- Manual stock adjustment from modal interface
+- Prevents negative stock values
+- Real-time stock updates across all modules
+
+### Order Management
+- Paginated order listing with client search
+- Detailed view of products and quantities per order
+- Multi-product order creation with client selection
+- Real-time total calculation
+- Status changes (pending, completed, cancelled) via dropdown
+- Automatic stock restoration on order deletion
+
+## Technology Stack
+
+FrontendPT is built with modern web technologies optimized for performance and developer experience:
+
+| Technology | Version | Purpose |
+|------------|---------|----------|
+| **React** | 19.2.0 | UI library for building component-based interfaces |
+| **Vite** | 7.3.1 | Fast build tool and development server |
+| **TailwindCSS** | 3.4.19 | Utility-first CSS framework for styling |
+| **React Router** | 7.13.1 | Client-side routing and navigation |
+| **Axios** | 1.13.5 | HTTP client for API communication |
+| **Node.js** | 18+ | JavaScript runtime (required) |
+
+## Architecture Overview
+
+The application follows a clean architecture pattern with clear separation of concerns:
+
+```
+src/
+├── application/       # Business logic layer
+│   └── hooks/         # Custom React hooks for state management
+├── domain/            # Domain models and types
+│   └── types.js       # Response mappers from backend to frontend
+├── infrastructure/    # External services layer
+│   ├── api.js         # Axios instance with base configuration
+│   └── *Service.js    # HTTP service modules per feature
+└── ui/                # Presentation layer
+    ├── components/    # Reusable UI components
+    └── pages/         # Feature-specific page components
+```
+
+### Architecture Principles
+
+<Steps>
+  <Step title="Separation of Concerns">
+    Each layer has a specific responsibility: UI handles presentation, application manages state, infrastructure communicates with external services.
+  </Step>
+  
+  <Step title="Custom Hooks Pattern">
+    Business logic is encapsulated in custom hooks (`useProducts`, `useCategories`, etc.) that handle state and API calls.
+  </Step>
+  
+  <Step title="Service Layer">
+    All HTTP requests are abstracted into service modules, making the codebase easy to test and maintain.
+  </Step>
+  
+  <Step title="Component Reusability">
+    Common UI patterns (Modal, Pagination, SearchBar) are extracted into reusable components.
+  </Step>
+</Steps>
+
+## Project Structure
+
+Here's a detailed breakdown of the project organization:
+
+```bash
+src/
+├── application/
+│   └── hooks/              # Custom hooks — one per module
+│       ├── useProducts.js  # Products state & API calls
+│       ├── useCategories.js
+│       ├── useClients.js
+│       ├── useInventory.js
+│       └── useOrders.js
+├── domain/
+│   └── types.js            # Backend response mappers
+├── infrastructure/
+│   ├── api.js              # Axios instance with base URL
+│   ├── productService.js   # Products CRUD + search + filters
+│   ├── categoryService.js  # Categories CRUD (no pagination)
+│   ├── clientService.js    # Clients CRUD + search
+│   ├── inventoryService.js # Inventory listing + stock adjustment
+│   └── orderService.js     # Orders CRUD + status changes
+├── ui/
+│   ├── components/         # Reusable UI components
+│   │   ├── Modal.jsx       # Generic overlay modal
+│   │   ├── PageHeader.jsx  # Title + subtitle + action button
+│   │   ├── Pagination.jsx  # Laravel pagination controls
+│   │   ├── SearchBar.jsx   # Controlled search input
+│   │   └── Sidebar.jsx     # Navigation menu with NavLink
+│   └── pages/              # Feature pages (one folder per module)
+│       ├── products/ProductsPage.jsx
+│       ├── categories/CategoriesPage.jsx
+│       ├── clients/ClientsPage.jsx
+│       ├── inventory/InventoryPage.jsx
+│       └── orders/OrdersPage.jsx
+├── App.jsx                 # Routes and main layout
+├── main.jsx                # Application entry point
+└── index.css               # Tailwind directives + global styles
+```
+
+## API Integration
+
+FrontendPT communicates with a Laravel backend through RESTful API endpoints. The base API configuration is defined in `src/infrastructure/api.js`:
+
+```javascript src/infrastructure/api.js
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://localhost:8000/api",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+export default api;
+```
+
+All service modules import this configured axios instance to make HTTP requests:
+
+```javascript src/infrastructure/productService.js
+import api from "./api";
+
+export const getProducts = async (page = 1, search = "", category_id = "") => {
+  const params = { page, search };
+  if (category_id !== "") params.category_id = category_id;
+  
+  const { data } = await api.get("/products", { params });
+  return data;
+};
+
+export const createProduct = async product => {
+  const { data } = await api.post("/products", product);
+  return data.product;
+};
+```
+
+<Warning>
+  The application expects the Laravel backend to be running and accessible. Without a working backend API, the application will not function properly.
+</Warning>
+
+## Development Server
+
+The application runs on **Vite's development server** which provides:
+
+- ⚡ Lightning-fast hot module replacement (HMR)
+- 🔧 Instant feedback on code changes
+- 🎯 Optimized dependency pre-bundling
+- 🚀 Native ES modules support
+
+By default, Vite serves the application at `http://localhost:5173`.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get FrontendPT up and running on your local machine
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure API endpoints and environment settings
+  </Card>
+</CardGroup>

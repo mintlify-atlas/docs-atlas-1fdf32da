@@ -1,0 +1,332 @@
+---
+title: Product Service
+description: API reference for product management operations including listing, creating, updating, and deleting products
+---
+
+The Product Service provides functions for managing products in the FrontendPT application. All functions interact with the Laravel backend API at `http://localhost:8000/api`.
+
+## Functions
+
+### getProducts
+
+Retrieves a paginated list of products with optional filtering by search term and category.
+
+```javascript
+getProducts(page = 1, search = "", category_id = "")
+```
+
+<ParamField path="page" type="number" default="1">
+  The page number for pagination
+</ParamField>
+
+<ParamField path="search" type="string" default="">
+  Search term to filter products by name or description
+</ParamField>
+
+<ParamField path="category_id" type="string" default="">
+  Category ID to filter products by category. Only included in request if not empty
+</ParamField>
+
+**API Endpoint:** `GET /api/products`
+
+**Returns:**
+<ResponseField name="data" type="object">
+  Paginated response object containing products and pagination metadata
+  
+  <ResponseField name="products" type="array">
+    Array of product objects
+  </ResponseField>
+  
+  <ResponseField name="current_page" type="number">
+    Current page number
+  </ResponseField>
+  
+  <ResponseField name="total" type="number">
+    Total number of products
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getProducts } from './infrastructure/productService';
+
+// Get first page of all products
+const products = await getProducts();
+
+// Get second page with search
+const searchResults = await getProducts(2, "laptop");
+
+// Filter by category
+const categoryProducts = await getProducts(1, "", "5");
+```
+
+**Example Response:**
+
+```json
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Laptop",
+      "description": "High-performance laptop",
+      "price": 999.99,
+      "category_id": 5,
+      "stock": 10
+    }
+  ],
+  "current_page": 1,
+  "total": 50,
+  "per_page": 15
+}
+```
+
+---
+
+### getAllProducts
+
+Retrieves all products without pagination.
+
+```javascript
+getAllProducts()
+```
+
+**API Endpoint:** `GET /api/products/all`
+
+**Returns:**
+<ResponseField name="products" type="array">
+  Array of all product objects
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getAllProducts } from './infrastructure/productService';
+
+const allProducts = await getAllProducts();
+console.log(`Total products: ${allProducts.length}`);
+```
+
+**Example Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Laptop",
+    "description": "High-performance laptop",
+    "price": 999.99,
+    "category_id": 5,
+    "stock": 10
+  },
+  {
+    "id": 2,
+    "name": "Mouse",
+    "description": "Wireless mouse",
+    "price": 29.99,
+    "category_id": 3,
+    "stock": 50
+  }
+]
+```
+
+---
+
+### createProduct
+
+Creates a new product.
+
+```javascript
+createProduct(product)
+```
+
+<ParamField path="product" type="object" required>
+  Product object containing product details
+  
+  <ParamField path="product.name" type="string" required>
+    Product name
+  </ParamField>
+  
+  <ParamField path="product.description" type="string">
+    Product description
+  </ParamField>
+  
+  <ParamField path="product.price" type="number" required>
+    Product price
+  </ParamField>
+  
+  <ParamField path="product.category_id" type="number" required>
+    Category ID for the product
+  </ParamField>
+  
+  <ParamField path="product.stock" type="number">
+    Initial stock quantity
+  </ParamField>
+</ParamField>
+
+**API Endpoint:** `POST /api/products`
+
+**Returns:**
+<ResponseField name="product" type="object">
+  The newly created product object with ID assigned
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { createProduct } from './infrastructure/productService';
+
+const newProduct = {
+  name: "Keyboard",
+  description: "Mechanical gaming keyboard",
+  price: 89.99,
+  category_id: 3,
+  stock: 25
+};
+
+const createdProduct = await createProduct(newProduct);
+console.log(`Created product with ID: ${createdProduct.id}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 15,
+  "name": "Keyboard",
+  "description": "Mechanical gaming keyboard",
+  "price": 89.99,
+  "category_id": 3,
+  "stock": 25,
+  "created_at": "2026-03-04T10:30:00.000000Z",
+  "updated_at": "2026-03-04T10:30:00.000000Z"
+}
+```
+
+---
+
+### updateProduct
+
+Updates an existing product.
+
+```javascript
+updateProduct(id, product)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the product to update
+</ParamField>
+
+<ParamField path="product" type="object" required>
+  Product object containing fields to update
+  
+  <ParamField path="product.name" type="string">
+    Updated product name
+  </ParamField>
+  
+  <ParamField path="product.description" type="string">
+    Updated product description
+  </ParamField>
+  
+  <ParamField path="product.price" type="number">
+    Updated product price
+  </ParamField>
+  
+  <ParamField path="product.category_id" type="number">
+    Updated category ID
+  </ParamField>
+  
+  <ParamField path="product.stock" type="number">
+    Updated stock quantity
+  </ParamField>
+</ParamField>
+
+**API Endpoint:** `PUT /api/products/{id}`
+
+**Returns:**
+<ResponseField name="product" type="object">
+  The updated product object
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { updateProduct } from './infrastructure/productService';
+
+const updates = {
+  price: 79.99,
+  stock: 30
+};
+
+const updatedProduct = await updateProduct(15, updates);
+console.log(`Updated product: ${updatedProduct.name}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 15,
+  "name": "Keyboard",
+  "description": "Mechanical gaming keyboard",
+  "price": 79.99,
+  "category_id": 3,
+  "stock": 30,
+  "created_at": "2026-03-04T10:30:00.000000Z",
+  "updated_at": "2026-03-04T11:15:00.000000Z"
+}
+```
+
+---
+
+### deleteProduct
+
+Deletes a product by ID.
+
+```javascript
+deleteProduct(id)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the product to delete
+</ParamField>
+
+**API Endpoint:** `DELETE /api/products/{id}`
+
+**Returns:** 
+<ResponseField name="void" type="void">
+  No return value (void)
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { deleteProduct } from './infrastructure/productService';
+
+try {
+  await deleteProduct(15);
+  console.log('Product deleted successfully');
+} catch (error) {
+  console.error('Failed to delete product:', error);
+}
+```
+
+## Import
+
+```javascript
+import {
+  getProducts,
+  getAllProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct
+} from './infrastructure/productService';
+```
+
+## Base API Configuration
+
+All requests are made using axios with the following configuration:
+- **Base URL:** `http://localhost:8000/api`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Accept: application/json`

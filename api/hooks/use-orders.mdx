@@ -1,0 +1,340 @@
+---
+title: useOrders
+description: React hook for managing orders with pagination, search, and order operations
+---
+
+## Overview
+
+The `useOrders` hook provides a complete interface for managing orders in the FrontendPT application. It handles fetching paginated order lists, searching, creating new orders, updating order status, and deleting orders.
+
+## Function Signature
+
+```javascript
+function useOrders(): UseOrdersReturn
+```
+
+## Return Value
+
+The hook returns an object with the following properties:
+
+<ResponseField name="orders" type="array">
+  Array of order objects for the current page. Updated based on pagination and search filters.
+</ResponseField>
+
+<ResponseField name="pagination" type="object | null">
+  Pagination metadata object containing:
+  - `current_page`: Current page number
+  - `last_page`: Total number of pages
+  - `data`: Array of orders for current page
+  - Other pagination metadata from the API
+</ResponseField>
+
+<ResponseField name="loading" type="boolean">
+  Loading state indicator. `true` when fetching orders, `false` otherwise.
+</ResponseField>
+
+<ResponseField name="search" type="string">
+  Current search query string for filtering orders.
+</ResponseField>
+
+<ResponseField name="setSearch" type="function">
+  Function to update the search query. Triggers a new fetch with the search filter.
+  
+  **Signature:** `(search: string) => void`
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number (1-based index).
+</ResponseField>
+
+<ResponseField name="setPage" type="function">
+  Function to change the current page. Triggers a new fetch for the specified page.
+  
+  **Signature:** `(page: number) => void`
+</ResponseField>
+
+<ResponseField name="addOrder" type="function">
+  Async function to create a new order. Automatically refreshes the order list after creation.
+  
+  **Signature:** `(order: object) => Promise<void>`
+  
+  **Parameters:**
+  - `order`: Order object with required fields (client_id, products, status, etc.)
+</ResponseField>
+
+<ResponseField name="changeStatus" type="function">
+  Async function to update the status of an existing order. Automatically refreshes the order list after update.
+  
+  **Signature:** `(id: number, status: string) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Order ID to update
+  - `status`: New order status (e.g., "pending", "processing", "completed", "cancelled")
+</ResponseField>
+
+<ResponseField name="removeOrder" type="function">
+  Async function to delete an order. Automatically refreshes the order list after deletion.
+  
+  **Signature:** `(id: number) => Promise<void>`
+  
+  **Parameters:**
+  - `id`: Order ID to delete
+</ResponseField>
+
+## Implementation Details
+
+<Note>
+  Similar to `useInventory`, the `useOrders` hook does not expose an error state property. Errors are logged to the console but not returned to the component.
+</Note>
+
+## Usage Example
+
+### Order Management View
+
+```javascript
+import { useOrders } from "@/application/hooks/useOrders";
+
+function OrdersPage() {
+  const {
+    orders,
+    pagination,
+    loading,
+    search,
+    setSearch,
+    page,
+    setPage,
+    addOrder,
+    changeStatus,
+    removeOrder,
+  } = useOrders();
+
+  const handleCreateOrder = async () => {
+    await addOrder({
+      client_id: 1,
+      products: [
+        { product_id: 10, quantity: 2 },
+        { product_id: 15, quantity: 1 },
+      ],
+      status: "pending",
+      total: 149.99,
+    });
+  };
+
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    await changeStatus(orderId, newStatus);
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (confirm("Are you sure you want to delete this order?")) {
+      await removeOrder(orderId);
+    }
+  };
+
+  if (loading) return <div>Loading orders...</div>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search orders..."
+      />
+
+      <button onClick={handleCreateOrder}>Create Order</button>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Client</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((order) => (
+            <tr key={order.id}>
+              <td>#{order.id}</td>
+              <td>{order.client_name}</td>
+              <td>
+                <select
+                  value={order.status}
+                  onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </td>
+              <td>${order.total}</td>
+              <td>
+                <button onClick={() => handleDeleteOrder(order.id)}>
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div>
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination?.current_page} of {pagination?.last_page}
+        </span>
+        <button
+          disabled={page === pagination?.last_page}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Status Management Component
+
+```javascript
+import { useOrders } from "@/application/hooks/useOrders";
+
+function OrderStatusBadge({ order }) {
+  const { changeStatus } = useOrders();
+
+  const statusColors = {
+    pending: "yellow",
+    processing: "blue",
+    completed: "green",
+    cancelled: "red",
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      await changeStatus(order.id, newStatus);
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+    }
+  };
+
+  return (
+    <div>
+      <span
+        style={{
+          backgroundColor: statusColors[order.status],
+          padding: "4px 8px",
+          borderRadius: "4px",
+        }}
+      >
+        {order.status}
+      </span>
+      <div>
+        <button onClick={() => handleStatusChange("processing")}>
+          Mark as Processing
+        </button>
+        <button onClick={() => handleStatusChange("completed")}>
+          Mark as Completed
+        </button>
+        <button onClick={() => handleStatusChange("cancelled")}>
+          Cancel Order
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Creating an Order with Products
+
+```javascript
+import { useOrders } from "@/application/hooks/useOrders";
+import { useState } from "react";
+
+function CreateOrderForm() {
+  const { addOrder } = useOrders();
+  const [clientId, setClientId] = useState("");
+  const [products, setProducts] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const addProductToOrder = (productId, quantity) => {
+    setProducts([...products, { product_id: productId, quantity }]);
+  };
+
+  const calculateTotal = () => {
+    // Calculate total based on products and their prices
+    return products.reduce((total, item) => {
+      return total + item.price * item.quantity;
+    }, 0);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!clientId || products.length === 0) {
+      alert("Please select a client and add at least one product");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await addOrder({
+        client_id: parseInt(clientId, 10),
+        products: products,
+        status: "pending",
+        total: calculateTotal(),
+      });
+      alert("Order created successfully");
+      // Reset form
+      setClientId("");
+      setProducts([]);
+    } catch (error) {
+      alert("Failed to create order");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Client ID:</label>
+        <input
+          type="number"
+          value={clientId}
+          onChange={(e) => setClientId(e.target.value)}
+          required
+        />
+      </div>
+
+      <div>
+        <h3>Products</h3>
+        {products.map((product, index) => (
+          <div key={index}>
+            Product ID: {product.product_id}, Quantity: {product.quantity}
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <p>Total: ${calculateTotal().toFixed(2)}</p>
+      </div>
+
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Creating..." : "Create Order"}
+      </button>
+    </form>
+  );
+}
+```
+
+## Source Code
+
+Location: `src/application/hooks/useOrders.js:4`

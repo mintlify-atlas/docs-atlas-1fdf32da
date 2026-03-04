@@ -1,0 +1,131 @@
+---
+title: Modal
+description: A generic modal dialog component for displaying overlays with custom content
+---
+
+The Modal component provides a reusable overlay dialog for forms, confirmations, and other interactive content. It handles the backdrop, positioning, and close functionality automatically.
+
+## Visual Appearance
+
+The Modal renders as a centered white dialog box with:
+- Dark semi-transparent backdrop overlay
+- Rounded corners with shadow
+- Fixed width (max-w-md)
+- Header with title and close button
+- Scrollable content area
+
+## Props
+
+<ParamField path="title" type="string" required>
+  The title displayed in the modal header
+</ParamField>
+
+<ParamField path="onClose" type="function" required>
+  Callback function invoked when the user clicks the close button (×)
+</ParamField>
+
+<ParamField path="children" type="ReactNode" required>
+  The content to render inside the modal body
+</ParamField>
+
+## Usage Examples
+
+### Creating a New Product
+
+```jsx
+import Modal from "../../components/Modal";
+import { useState } from "react";
+
+function ProductsPage() {
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  return (
+    <div>
+      <button onClick={() => setShowModal(true)}>
+        + Nuevo producto
+      </button>
+
+      {showModal && (
+        <Modal 
+          title={editing ? "Editar producto" : "Nuevo producto"} 
+          onClose={() => setShowModal(false)}
+        >
+          <form>
+            {/* Form content here */}
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+```
+
+### Adjusting Inventory Stock
+
+```jsx
+import Modal from "../../components/Modal";
+
+function InventoryPage() {
+  const [adjustingProduct, setAdjustingProduct] = useState(null);
+
+  return (
+    <div>
+      {adjustingProduct && (
+        <Modal 
+          title={`Ajustar stock — ${adjustingProduct.name}`} 
+          onClose={() => setAdjustingProduct(null)}
+        >
+          <div>
+            {/* Stock adjustment form */}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+```
+
+### Creating a New Order
+
+```jsx
+import Modal from "../../components/Modal";
+
+function OrdersPage() {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <div>
+      {showModal && (
+        <Modal 
+          title="Nuevo pedido" 
+          onClose={() => setShowModal(false)}
+        >
+          <div>
+            {/* Order creation form */}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+```
+
+## Common Use Cases
+
+- **Forms**: Creating and editing entities (products, clients, categories)
+- **Stock Adjustments**: Modifying inventory quantities
+- **Order Creation**: Building new orders with product selection
+- **Confirmations**: Displaying delete confirmations or warnings
+- **Details View**: Showing expanded information about items
+
+## Implementation Details
+
+The Modal component is located at `/home/daytona/workspace/source/src/ui/components/Modal.jsx:1-18`.
+
+Key features:
+- Fixed positioning with z-index 50 for proper layering
+- Backdrop click does not close (only the × button)
+- Auto-centered with flexbox layout
+- White background with rounded corners and shadow
+- Responsive width (w-full max-w-md)

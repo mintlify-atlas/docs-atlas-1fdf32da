@@ -1,0 +1,280 @@
+---
+title: Toast
+description: A notification toast component for displaying temporary success, warning, and error messages
+---
+
+The Toast component displays temporary notification messages at the bottom-right of the screen. It automatically dismisses after 3 seconds and supports three visual variants: success, warning, and error.
+
+## Visual Appearance
+
+The Toast renders as:
+- Fixed position at bottom-right corner
+- Colored background and border based on type
+- Icon indicator (✓, ⚠, ✕)
+- Message text
+- Close button (×)
+- Smooth transitions and shadow
+- Auto-dismiss after 3 seconds
+
+## Props
+
+<ParamField path="message" type="string" required>
+  The notification message text to display
+</ParamField>
+
+<ParamField path="type" type="'success' | 'warning' | 'error'" default="success">
+  The toast type, which determines the color scheme and icon:
+  - `success`: Green background, checkmark icon (✓)
+  - `warning`: Yellow background, warning icon (⚠)
+  - `error`: Red background, error icon (✕)
+</ParamField>
+
+<ParamField path="onClose" type="function" required>
+  Callback function invoked when the toast is dismissed (either automatically after 3s or manually via close button)
+</ParamField>
+
+## Toast Types
+
+### Success Toast
+```jsx
+<Toast 
+  message="Producto creado con éxito" 
+  type="success" 
+  onClose={hideToast} 
+/>
+```
+- Background: Green (bg-green-50)
+- Border: Green (border-green-200)
+- Text: Green (text-green-700)
+- Icon: ✓
+
+### Warning Toast
+```jsx
+<Toast 
+  message="El stock está bajo" 
+  type="warning" 
+  onClose={hideToast} 
+/>
+```
+- Background: Yellow (bg-yellow-50)
+- Border: Yellow (border-yellow-200)
+- Text: Yellow (text-yellow-700)
+- Icon: ⚠
+
+### Error Toast
+```jsx
+<Toast 
+  message="Error al guardar los cambios" 
+  type="error" 
+  onClose={hideToast} 
+/>
+```
+- Background: Red (bg-red-50)
+- Border: Red (border-red-200)
+- Text: Red (text-red-500)
+- Icon: ✕
+
+## Usage Examples
+
+### With useToast Hook
+
+The recommended pattern is to use the `useToast` hook for managing toast state:
+
+```jsx
+import Toast from "../../components/Toast";
+import { useToast } from "../../../application/hooks/useToast";
+
+function ProductsPage() {
+  const { toast, showToast, hideToast } = useToast();
+
+  const handleCreateProduct = async (data) => {
+    try {
+      await createProduct(data);
+      showToast("Producto creado con éxito", "success");
+    } catch (error) {
+      showToast("Error al crear el producto", "error");
+    }
+  };
+
+  return (
+    <div>
+      {/* Page content */}
+      
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={hideToast} 
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### Manual State Management
+
+```jsx
+import Toast from "../../components/Toast";
+import { useState } from "react";
+
+function OrdersPage() {
+  const [toast, setToast] = useState(null);
+
+  const showSuccess = (message) => {
+    setToast({ message, type: "success" });
+  };
+
+  const showError = (message) => {
+    setToast({ message, type: "error" });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
+
+  return (
+    <div>
+      {/* Page content */}
+      
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={hideToast} 
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### Success Messages
+
+```jsx
+import Toast from "../../components/Toast";
+
+function ClientsPage() {
+  const { toast, showToast, hideToast } = useToast();
+
+  const handleSave = async () => {
+    try {
+      await saveClient(data);
+      showToast("Cliente guardado exitosamente", "success");
+    } catch (error) {
+      showToast("Error al guardar el cliente", "error");
+    }
+  };
+
+  return (
+    <div>
+      {/* Content */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+    </div>
+  );
+}
+```
+
+### Error Handling
+
+```jsx
+import Toast from "../../components/Toast";
+
+function InventoryPage() {
+  const { toast, showToast, hideToast } = useToast();
+
+  const handleAdjustStock = async (productId, adjustment) => {
+    try {
+      await adjustInventory(productId, adjustment);
+      showToast("Stock ajustado correctamente", "success");
+    } catch (error) {
+      showToast(error.message || "Error al ajustar el stock", "error");
+    }
+  };
+
+  return (
+    <div>
+      {/* Content */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+    </div>
+  );
+}
+```
+
+## Auto-Dismiss Behavior
+
+The Toast automatically dismisses after 3 seconds using a `useEffect` hook:
+
+```jsx
+useEffect(() => {
+  const timer = setTimeout(onClose, 3000);
+  return () => clearTimeout(timer);
+}, [onClose]);
+```
+
+### Important Notes
+- Timer starts when component mounts
+- Timer is cleared if component unmounts early
+- User can manually close before auto-dismiss
+- Each new toast resets the timer
+
+## Positioning
+
+The Toast uses fixed positioning:
+- Position: `fixed bottom-6 right-6`
+- Z-index: 50 (appears above most content)
+- Stays in corner even when scrolling
+
+### Stacking Multiple Toasts
+
+The current implementation shows one toast at a time. To stack multiple toasts, you would need to:
+
+```jsx
+const [toasts, setToasts] = useState([]);
+
+const addToast = (message, type) => {
+  const id = Date.now();
+  setToasts(prev => [...prev, { id, message, type }]);
+};
+
+const removeToast = (id) => {
+  setToasts(prev => prev.filter(t => t.id !== id));
+};
+
+return (
+  <div>
+    {toasts.map((toast, index) => (
+      <Toast
+        key={toast.id}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => removeToast(toast.id)}
+        style={{ bottom: `${6 + index * 5}rem` }}
+      />
+    ))}
+  </div>
+);
+```
+
+## Common Use Cases
+
+- **Success Confirmations**: "Product created", "Changes saved", "Order placed"
+- **Error Notifications**: "Failed to save", "Network error", "Validation failed"
+- **Warning Messages**: "Low stock", "Session expiring", "Unsaved changes"
+- **User Feedback**: Immediate response to user actions
+- **Non-blocking Notifications**: Inform without interrupting workflow
+
+## Implementation Details
+
+The Toast component is located at `/home/daytona/workspace/source/src/ui/components/Toast.jsx:1-32`.
+
+Key features:
+- Automatic 3-second dismiss timer
+- Three color variants (success, warning, error)
+- Icon indicators for each type
+- Manual close button
+- Smooth transitions
+- Shadow for visual elevation
+- Fixed positioning at bottom-right
+- Z-index 50 for proper layering
+- Flexbox layout for content alignment

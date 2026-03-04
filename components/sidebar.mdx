@@ -1,0 +1,182 @@
+---
+title: Sidebar
+description: The main navigation sidebar component with links to all major sections
+---
+
+The Sidebar component provides the primary navigation menu for the application. It displays navigation links to all main sections and highlights the current active route.
+
+## Visual Appearance
+
+The Sidebar renders as:
+- Fixed-width column (w-52) on the left side
+- White background with light border
+- "MENU" label in uppercase
+- Vertical list of navigation links
+- Active link highlighted in primary color
+- Inactive links in gray with hover effects
+
+## Props
+
+The Sidebar component accepts no props. Navigation links are internally defined.
+
+## Available Navigation Links
+
+The Sidebar includes the following hardcoded navigation items:
+
+1. **Products** - `/products`
+2. **Categories** - `/categories`
+3. **Clients** - `/clients`
+4. **Inventory** - `/inventory`
+5. **Orders** - `/orders`
+
+## Usage Example
+
+### Basic Layout Integration
+
+```jsx
+import Sidebar from "../../components/Sidebar";
+import { Outlet } from "react-router-dom";
+
+function Layout() {
+  return (
+    <div className="flex h-screen">
+      <Sidebar />
+      <main className="flex-1 p-8 overflow-auto">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+```
+
+### With App Router
+
+```jsx
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import ProductsPage from "./pages/products/ProductsPage";
+import CategoriesPage from "./pages/categories/CategoriesPage";
+import ClientsPage from "./pages/clients/ClientsPage";
+import InventoryPage from "./pages/inventory/InventoryPage";
+import OrdersPage from "./pages/orders/OrdersPage";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 p-8 overflow-auto">
+          <Routes>
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}
+```
+
+## Active Link Behavior
+
+The Sidebar uses React Router's `NavLink` component with automatic active state detection:
+
+```jsx
+<NavLink 
+  to="/products"
+  className={({ isActive }) => 
+    isActive 
+      ? "text-primary font-semibold" 
+      : "text-gray-600 hover:text-gray-900"
+  }
+>
+  Products
+</NavLink>
+```
+
+### Active State
+- **Color**: Primary color (text-primary)
+- **Weight**: Semibold font
+- **Indicator**: Visually distinct from inactive links
+
+### Inactive State
+- **Color**: Gray (text-gray-600)
+- **Hover**: Darker gray (hover:text-gray-900)
+- **Weight**: Normal font weight
+
+## Styling Details
+
+### Container
+- Width: `w-52` (13rem / 208px)
+- Background: White
+- Border: Right border, light gray
+- Padding: `px-6 py-8`
+- Shrink: `shrink-0` (prevents flexbox shrinking)
+
+### Menu Label
+- Text: "MENU" in uppercase
+- Size: Extra small (text-xs)
+- Weight: Bold
+- Color: Gray-400
+- Spacing: Wide letter spacing
+- Margin: Bottom margin (mb-6)
+
+### Navigation Links
+- Text size: Small (text-sm)
+- Padding: `py-1.5 px-2`
+- Border radius: Rounded
+- Transitions: Smooth color transitions
+- Gap: `gap-1` between links
+
+## Customization
+
+### Adding New Links
+
+To add new navigation items, edit the `links` array in the component:
+
+```jsx
+const links = [
+  { to: "/products", label: "Products" },
+  { to: "/categories", label: "Categories" },
+  { to: "/clients", label: "Clients" },
+  { to: "/inventory", label: "Inventory" },
+  { to: "/orders", label: "Orders" },
+  { to: "/reports", label: "Reports" }, // New link
+];
+```
+
+### Modifying Styles
+
+The Sidebar uses Tailwind CSS classes. Modify the `className` attributes to customize:
+
+```jsx
+// Change width
+<aside className="w-64 bg-white border-r ...">
+
+// Change active link color
+<NavLink className={({ isActive }) => 
+  isActive ? "text-blue-600 font-semibold" : "..."
+}>
+```
+
+## Common Use Cases
+
+- **Main Navigation**: Primary navigation for all application pages
+- **Route Highlighting**: Visual indicator of current page location
+- **Persistent Navigation**: Always visible navigation structure
+- **User Orientation**: Helps users understand app structure
+
+## Implementation Details
+
+The Sidebar component is located at `/home/daytona/workspace/source/src/ui/components/Sidebar.jsx:1-26`.
+
+Key features:
+- Uses React Router's `NavLink` for automatic active state
+- Fixed width with shrink prevention
+- Vertical flexbox layout for links
+- Map iteration over links array
+- Conditional styling based on active state
+- Smooth transition effects on hover and active states

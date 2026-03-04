@@ -1,0 +1,195 @@
+---
+title: Architecture Overview
+description: Overview of the clean architecture pattern used in FrontendPT
+---
+
+# Architecture Overview
+
+FrontendPT follows a **Clean Architecture** pattern that separates concerns into distinct layers, making the codebase maintainable, testable, and scalable. This architectural approach ensures that business logic remains independent of frameworks, UI, and external services.
+
+## Why Clean Architecture?
+
+Clean Architecture provides several key benefits:
+
+- **Independence**: Business logic doesn't depend on UI or infrastructure
+- **Testability**: Each layer can be tested in isolation
+- **Flexibility**: Easy to swap implementations (e.g., API clients, UI frameworks)
+- **Maintainability**: Clear separation of concerns makes code easier to understand and modify
+
+## Architecture Layers
+
+The application is organized into four main layers:
+
+```
+src/
+├── domain/           # Business entities and types
+├── application/      # Use cases and application logic
+├── infrastructure/   # External services and APIs
+└── ui/              # User interface components
+```
+
+### 1. Domain Layer
+
+**Location**: `src/domain/`
+
+The innermost layer containing:
+- Business entities
+- Domain types
+- Factory functions for creating domain objects
+
+**Example** from `src/domain/types.js:3`:
+```javascript
+export const createProduct = data => ({
+  id: data.id,
+  name: data.name,
+  price: parseFloat(data.price),
+  stock: data.stock,
+  category_id: data.category_id,
+  category: data.category ?? null,
+});
+```
+
+### 2. Application Layer
+
+**Location**: `src/application/`
+
+Contains application-specific business rules:
+- Custom React hooks
+- State management logic
+- Orchestration of domain and infrastructure services
+
+**Example** from `src/application/hooks/useProducts.js:4`:
+```javascript
+export function useProducts() {
+  const [products, setProducts] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(true);
+  // ... manages product state and operations
+}
+```
+
+### 3. Infrastructure Layer
+
+**Location**: `src/infrastructure/`
+
+Handles external concerns:
+- API communication
+- Service implementations
+- Data persistence
+
+**Example** from `src/infrastructure/api.js:5`:
+```javascript
+const api = axios.create({
+  baseURL: "http://localhost:8000/api",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+```
+
+### 4. UI Layer
+
+**Location**: `src/ui/`
+
+Presentation layer containing:
+- React components
+- Pages
+- UI-specific logic
+
+**Example** from `src/ui/pages/products/ProductsPage.jsx:12`:
+```javascript
+function ProductsPage() {
+  const { products, pagination, loading, search, setSearch, 
+         setPage, addProduct, editProduct, removeProduct } = useProducts();
+  // ... renders product management interface
+}
+```
+
+## Data Flow
+
+The architecture enforces unidirectional data flow:
+
+```
+UI Layer
+    ↓ (calls)
+Application Layer (Hooks)
+    ↓ (uses)
+Infrastructure Layer (Services)
+    ↓ (communicates with)
+Backend API
+    ↓ (returns)
+Infrastructure Layer
+    ↓ (transforms using)
+Domain Layer (Types)
+    ↓ (updates)
+Application Layer (State)
+    ↓ (renders)
+UI Layer
+```
+
+## Dependency Rule
+
+The key principle of Clean Architecture is the **Dependency Rule**:
+
+> Dependencies can only point inward. Inner layers know nothing about outer layers.
+
+- **Domain** has no dependencies
+- **Application** depends only on Domain
+- **Infrastructure** depends on Domain (for types)
+- **UI** depends on Application (and sometimes Domain for types)
+
+## Module Organization
+
+Each business module follows the same pattern:
+
+1. **Domain Type** (e.g., `createProduct`)
+2. **Infrastructure Service** (e.g., `productService.js`)
+3. **Application Hook** (e.g., `useProducts.js`)
+4. **UI Page/Component** (e.g., `ProductsPage.jsx`)
+
+### Example: Products Module
+
+```
+domain/types.js          → createProduct()
+infrastructure/productService.js → getProducts(), createProduct(), etc.
+application/hooks/useProducts.js → useProducts()
+ui/pages/products/ProductsPage.jsx → <ProductsPage />
+```
+
+## Benefits in Practice
+
+### Easy Testing
+Each layer can be tested independently:
+```javascript
+// Test infrastructure service in isolation
+test('getProducts fetches from API', async () => {
+  const products = await productService.getProducts();
+  expect(products).toBeDefined();
+});
+```
+
+### Swappable Infrastructure
+API implementation can change without affecting application logic:
+```javascript
+// Could swap axios for fetch, or add caching layer
+import api from "./api"; // Implementation detail hidden
+```
+
+### Reusable Business Logic
+Hooks encapsulate business logic, reusable across components:
+```javascript
+// Same hook used in different pages/contexts
+const { products, loading } = useProducts();
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Project Structure" icon="folder-tree" href="/architecture/project-structure">
+    Detailed breakdown of the directory structure
+  </Card>
+  <Card title="Clean Architecture Deep Dive" icon="layer-group" href="/architecture/clean-architecture">
+    In-depth explanation of each architectural layer
+  </Card>
+</CardGroup>

@@ -1,0 +1,514 @@
+---
+title: Order Service
+description: API reference for order management operations including listing, creating, updating order status, and deleting orders
+---
+
+The Order Service provides functions for managing customer orders in the FrontendPT application. All functions interact with the Laravel backend API at `http://localhost:8000/api`.
+
+## Functions
+
+### getOrders
+
+Retrieves a paginated list of orders with optional search filtering.
+
+```javascript
+getOrders(page = 1, search = "")
+```
+
+<ParamField path="page" type="number" default="1">
+  The page number for pagination
+</ParamField>
+
+<ParamField path="search" type="string" default="">
+  Search term to filter orders by order number, client name, or other fields. Only included in request if not empty
+</ParamField>
+
+**API Endpoint:** `GET /api/orders`
+
+**Returns:**
+<ResponseField name="data" type="object">
+  Paginated response object containing orders and pagination metadata
+  
+  <ResponseField name="orders" type="array">
+    Array of order objects
+  </ResponseField>
+  
+  <ResponseField name="current_page" type="number">
+    Current page number
+  </ResponseField>
+  
+  <ResponseField name="total" type="number">
+    Total number of orders
+  </ResponseField>
+  
+  <ResponseField name="per_page" type="number">
+    Number of orders per page
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getOrders } from './infrastructure/orderSrevice';
+
+// Get first page of orders
+const ordersData = await getOrders();
+console.log(`Total orders: ${ordersData.total}`);
+
+// Get specific page
+const page2 = await getOrders(2);
+
+// Search orders
+const searchResults = await getOrders(1, "ORD-2026");
+```
+
+**Example Response:**
+
+```json
+{
+  "orders": [
+    {
+      "id": 1,
+      "order_number": "ORD-2026-001",
+      "client_id": 5,
+      "client_name": "John Doe",
+      "total_amount": 1599.98,
+      "status": "pending",
+      "items": [
+        {
+          "product_id": 1,
+          "product_name": "Laptop Pro 15",
+          "quantity": 1,
+          "price": 1299.99
+        },
+        {
+          "product_id": 2,
+          "product_name": "Wireless Mouse",
+          "quantity": 10,
+          "price": 29.99
+        }
+      ],
+      "created_at": "2026-03-04T09:00:00.000000Z",
+      "updated_at": "2026-03-04T09:00:00.000000Z"
+    },
+    {
+      "id": 2,
+      "order_number": "ORD-2026-002",
+      "client_id": 8,
+      "client_name": "Jane Smith",
+      "total_amount": 599.99,
+      "status": "completed",
+      "items": [
+        {
+          "product_id": 3,
+          "product_name": "Monitor 27\"",
+          "quantity": 1,
+          "price": 599.99
+        }
+      ],
+      "created_at": "2026-03-03T14:30:00.000000Z",
+      "updated_at": "2026-03-04T10:15:00.000000Z"
+    }
+  ],
+  "current_page": 1,
+  "total": 156,
+  "per_page": 15
+}
+```
+
+---
+
+### createOrder
+
+Creates a new order.
+
+```javascript
+createOrder(order)
+```
+
+<ParamField path="order" type="object" required>
+  Order object containing order details
+  
+  <ParamField path="order.client_id" type="number" required>
+    ID of the client placing the order
+  </ParamField>
+  
+  <ParamField path="order.items" type="array" required>
+    Array of order items
+    
+    <ParamField path="order.items[].product_id" type="number" required>
+      ID of the product
+    </ParamField>
+    
+    <ParamField path="order.items[].quantity" type="number" required>
+      Quantity ordered
+    </ParamField>
+    
+    <ParamField path="order.items[].price" type="number" required>
+      Price per unit at time of order
+    </ParamField>
+  </ParamField>
+  
+  <ParamField path="order.status" type="string" default="pending">
+    Initial order status (e.g., "pending", "processing", "completed")
+  </ParamField>
+  
+  <ParamField path="order.notes" type="string">
+    Optional notes or special instructions
+  </ParamField>
+</ParamField>
+
+**API Endpoint:** `POST /api/orders`
+
+**Returns:**
+<ResponseField name="order" type="object">
+  The newly created order object with ID and order number assigned
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { createOrder } from './infrastructure/orderSrevice';
+
+const newOrder = {
+  client_id: 5,
+  items: [
+    {
+      product_id: 1,
+      quantity: 2,
+      price: 1299.99
+    },
+    {
+      product_id: 4,
+      quantity: 1,
+      price: 89.99
+    }
+  ],
+  status: "pending",
+  notes: "Deliver between 9 AM - 5 PM"
+};
+
+const createdOrder = await createOrder(newOrder);
+console.log(`Order created: ${createdOrder.order_number}`);
+console.log(`Total: $${createdOrder.total_amount}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 157,
+  "order_number": "ORD-2026-157",
+  "client_id": 5,
+  "client_name": "John Doe",
+  "total_amount": 2689.97,
+  "status": "pending",
+  "items": [
+    {
+      "product_id": 1,
+      "product_name": "Laptop Pro 15",
+      "quantity": 2,
+      "price": 1299.99,
+      "subtotal": 2599.98
+    },
+    {
+      "product_id": 4,
+      "product_name": "Keyboard Mechanical",
+      "quantity": 1,
+      "price": 89.99,
+      "subtotal": 89.99
+    }
+  ],
+  "notes": "Deliver between 9 AM - 5 PM",
+  "created_at": "2026-03-04T11:30:00.000000Z",
+  "updated_at": "2026-03-04T11:30:00.000000Z"
+}
+```
+
+---
+
+### updateOrderStatus
+
+Updates the status of an existing order.
+
+```javascript
+updateOrderStatus(id, status)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the order to update
+</ParamField>
+
+<ParamField path="status" type="string" required>
+  The new status for the order. Common values:
+  - `pending` - Order placed, awaiting processing
+  - `processing` - Order is being prepared
+  - `shipped` - Order has been shipped
+  - `completed` - Order delivered and completed
+  - `cancelled` - Order cancelled
+</ParamField>
+
+**API Endpoint:** `PUT /api/orders/{id}`
+
+**Request Body:**
+```json
+{
+  "status": "completed"
+}
+```
+
+**Returns:**
+<ResponseField name="order" type="object">
+  The updated order object with new status
+  
+  <ResponseField name="id" type="number">
+    Order identifier
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Updated order status
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Timestamp of last update
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { updateOrderStatus } from './infrastructure/orderSrevice';
+
+// Mark order as processing
+const processing = await updateOrderStatus(157, "processing");
+console.log(`Order status: ${processing.status}`);
+
+// Mark order as completed
+const completed = await updateOrderStatus(157, "completed");
+
+// Cancel an order
+const cancelled = await updateOrderStatus(158, "cancelled");
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 157,
+  "order_number": "ORD-2026-157",
+  "client_id": 5,
+  "client_name": "John Doe",
+  "total_amount": 2689.97,
+  "status": "completed",
+  "items": [
+    {
+      "product_id": 1,
+      "product_name": "Laptop Pro 15",
+      "quantity": 2,
+      "price": 1299.99
+    }
+  ],
+  "created_at": "2026-03-04T11:30:00.000000Z",
+  "updated_at": "2026-03-04T15:45:00.000000Z"
+}
+```
+
+---
+
+### deleteOrder
+
+Deletes an order by ID.
+
+```javascript
+deleteOrder(id)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the order to delete
+</ParamField>
+
+**API Endpoint:** `DELETE /api/orders/{id}`
+
+**Returns:**
+<ResponseField name="void" type="void">
+  No return value (void)
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { deleteOrder } from './infrastructure/orderSrevice';
+
+try {
+  await deleteOrder(157);
+  console.log('Order deleted successfully');
+} catch (error) {
+  console.error('Failed to delete order:', error);
+}
+```
+
+**Notes:**
+- Deleting orders should be restricted based on order status
+- Consider implementing soft deletes instead of permanent deletion
+- Completed orders typically should not be deleted for record-keeping
+- May need to restore inventory if deleting a processed order
+
+## Import
+
+```javascript
+import {
+  getOrders,
+  createOrder,
+  updateOrderStatus,
+  deleteOrder
+} from './infrastructure/orderSrevice';
+```
+
+## Base API Configuration
+
+All requests are made using axios with the following configuration:
+- **Base URL:** `http://localhost:8000/api`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+## Common Use Cases
+
+### Order Management Dashboard
+
+```javascript
+import { getOrders, updateOrderStatus } from './infrastructure/orderSrevice';
+import { useState, useEffect } from 'react';
+
+const OrderDashboard = () => {
+  const [orders, setOrders] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  useEffect(() => {
+    const loadOrders = async () => {
+      const data = await getOrders(1);
+      setOrders(data.orders);
+    };
+    loadOrders();
+  }, []);
+  
+  const handleStatusChange = async (orderId, newStatus) => {
+    await updateOrderStatus(orderId, newStatus);
+    // Reload orders
+    const data = await getOrders(1);
+    setOrders(data.orders);
+  };
+  
+  const filteredOrders = statusFilter === 'all' 
+    ? orders 
+    : orders.filter(order => order.status === statusFilter);
+  
+  return (
+    <div>
+      <select onChange={(e) => setStatusFilter(e.target.value)}>
+        <option value="all">All Orders</option>
+        <option value="pending">Pending</option>
+        <option value="processing">Processing</option>
+        <option value="completed">Completed</option>
+      </select>
+      {/* Render filtered orders */}
+    </div>
+  );
+};
+```
+
+### Creating an Order from Shopping Cart
+
+```javascript
+import { createOrder } from './infrastructure/orderSrevice';
+
+const processCheckout = async (cart, clientId) => {
+  // Transform cart items to order format
+  const orderItems = cart.map(item => ({
+    product_id: item.product.id,
+    quantity: item.quantity,
+    price: item.product.price
+  }));
+  
+  const order = {
+    client_id: clientId,
+    items: orderItems,
+    status: "pending",
+    notes: "Standard delivery"
+  };
+  
+  try {
+    const createdOrder = await createOrder(order);
+    console.log(`Order ${createdOrder.order_number} created successfully`);
+    console.log(`Total: $${createdOrder.total_amount}`);
+    return createdOrder;
+  } catch (error) {
+    console.error('Order creation failed:', error);
+    throw error;
+  }
+};
+```
+
+### Order Status Workflow
+
+```javascript
+import { updateOrderStatus } from './infrastructure/orderSrevice';
+
+const processOrderWorkflow = async (orderId) => {
+  // Step 1: Mark as processing
+  await updateOrderStatus(orderId, "processing");
+  console.log('Order is being prepared...');
+  
+  // Step 2: Simulate processing time
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Step 3: Mark as shipped
+  await updateOrderStatus(orderId, "shipped");
+  console.log('Order has been shipped');
+  
+  // Step 4: Eventually mark as completed
+  // This would typically happen when delivery is confirmed
+  await updateOrderStatus(orderId, "completed");
+  console.log('Order completed');
+};
+```
+
+### Order Statistics
+
+```javascript
+import { getOrders } from './infrastructure/orderSrevice';
+
+const getOrderStatistics = async () => {
+  const ordersData = await getOrders(1);
+  const orders = ordersData.orders;
+  
+  const stats = {
+    total: ordersData.total,
+    pending: orders.filter(o => o.status === 'pending').length,
+    processing: orders.filter(o => o.status === 'processing').length,
+    completed: orders.filter(o => o.status === 'completed').length,
+    totalRevenue: orders
+      .filter(o => o.status === 'completed')
+      .reduce((sum, o) => sum + o.total_amount, 0)
+  };
+  
+  console.log('Order Statistics:');
+  console.log(`Total Orders: ${stats.total}`);
+  console.log(`Pending: ${stats.pending}`);
+  console.log(`Processing: ${stats.processing}`);
+  console.log(`Completed: ${stats.completed}`);
+  console.log(`Total Revenue: $${stats.totalRevenue.toFixed(2)}`);
+  
+  return stats;
+};
+```
+
+## Best Practices
+
+1. **Order Validation**: Always validate order data before submission
+2. **Status Transitions**: Enforce valid status transitions (e.g., pending → processing → shipped → completed)
+3. **Inventory Management**: Update inventory when orders are created or cancelled
+4. **Error Handling**: Implement proper error handling for payment failures or stock issues
+5. **Audit Trail**: Log all order status changes with timestamps and user information
+6. **Email Notifications**: Send confirmation emails when order status changes
+7. **Concurrency**: Handle concurrent order updates to prevent race conditions

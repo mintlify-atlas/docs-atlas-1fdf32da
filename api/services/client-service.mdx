@@ -1,0 +1,408 @@
+---
+title: Client Service
+description: API reference for client management operations including listing, creating, updating, and deleting clients
+---
+
+The Client Service provides functions for managing clients (customers) in the FrontendPT application. All functions interact with the Laravel backend API at `http://localhost:8000/api`.
+
+## Functions
+
+### getClients
+
+Retrieves a paginated list of clients with optional search filtering.
+
+```javascript
+getClients(page = 1, search = "")
+```
+
+<ParamField path="page" type="number" default="1">
+  The page number for pagination
+</ParamField>
+
+<ParamField path="search" type="string" default="">
+  Search term to filter clients by name, email, or other fields. Only included in request if not empty
+</ParamField>
+
+**API Endpoint:** `GET /api/clients`
+
+**Returns:**
+<ResponseField name="data" type="object">
+  Paginated response object containing clients and pagination metadata
+  
+  <ResponseField name="clients" type="array">
+    Array of client objects
+  </ResponseField>
+  
+  <ResponseField name="current_page" type="number">
+    Current page number
+  </ResponseField>
+  
+  <ResponseField name="total" type="number">
+    Total number of clients
+  </ResponseField>
+  
+  <ResponseField name="per_page" type="number">
+    Number of clients per page
+  </ResponseField>
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getClients } from './infrastructure/clientService';
+
+// Get first page of all clients
+const clientsData = await getClients();
+console.log(`Found ${clientsData.total} clients`);
+
+// Get second page
+const page2 = await getClients(2);
+
+// Search for specific clients
+const searchResults = await getClients(1, "john");
+```
+
+**Example Response:**
+
+```json
+{
+  "clients": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1234567890",
+      "address": "123 Main St, City",
+      "created_at": "2026-01-10T09:00:00.000000Z",
+      "updated_at": "2026-01-10T09:00:00.000000Z"
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "phone": "+1234567891",
+      "address": "456 Oak Ave, Town",
+      "created_at": "2026-01-12T10:30:00.000000Z",
+      "updated_at": "2026-01-12T10:30:00.000000Z"
+    }
+  ],
+  "current_page": 1,
+  "total": 45,
+  "per_page": 15
+}
+```
+
+---
+
+### getAllClients
+
+Retrieves all clients without pagination.
+
+```javascript
+getAllClients()
+```
+
+**API Endpoint:** `GET /api/clients/all`
+
+**Returns:**
+<ResponseField name="clients" type="array">
+  Array of all client objects
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { getAllClients } from './infrastructure/clientService';
+
+const allClients = await getAllClients();
+console.log(`Total clients: ${allClients.length}`);
+
+// Use for dropdowns or autocomplete
+const clientOptions = allClients.map(client => ({
+  value: client.id,
+  label: client.name
+}));
+```
+
+**Example Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "address": "123 Main St, City"
+  },
+  {
+    "id": 2,
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com",
+    "phone": "+1234567891",
+    "address": "456 Oak Ave, Town"
+  }
+]
+```
+
+---
+
+### createClient
+
+Creates a new client.
+
+```javascript
+createClient(client)
+```
+
+<ParamField path="client" type="object" required>
+  Client object containing client details
+  
+  <ParamField path="client.name" type="string" required>
+    Client's full name
+  </ParamField>
+  
+  <ParamField path="client.email" type="string" required>
+    Client's email address
+  </ParamField>
+  
+  <ParamField path="client.phone" type="string">
+    Client's phone number
+  </ParamField>
+  
+  <ParamField path="client.address" type="string">
+    Client's physical address
+  </ParamField>
+</ParamField>
+
+**API Endpoint:** `POST /api/clients`
+
+**Returns:**
+<ResponseField name="client" type="object">
+  The newly created client object with ID assigned
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { createClient } from './infrastructure/clientService';
+
+const newClient = {
+  name: "Robert Johnson",
+  email: "robert.j@example.com",
+  phone: "+1234567892",
+  address: "789 Pine Rd, Village"
+};
+
+const createdClient = await createClient(newClient);
+console.log(`Created client with ID: ${createdClient.id}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 25,
+  "name": "Robert Johnson",
+  "email": "robert.j@example.com",
+  "phone": "+1234567892",
+  "address": "789 Pine Rd, Village",
+  "created_at": "2026-03-04T10:30:00.000000Z",
+  "updated_at": "2026-03-04T10:30:00.000000Z"
+}
+```
+
+---
+
+### updateClient
+
+Updates an existing client's information.
+
+```javascript
+updateClient(id, client)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the client to update
+</ParamField>
+
+<ParamField path="client" type="object" required>
+  Client object containing fields to update
+  
+  <ParamField path="client.name" type="string">
+    Updated client name
+  </ParamField>
+  
+  <ParamField path="client.email" type="string">
+    Updated email address
+  </ParamField>
+  
+  <ParamField path="client.phone" type="string">
+    Updated phone number
+  </ParamField>
+  
+  <ParamField path="client.address" type="string">
+    Updated address
+  </ParamField>
+</ParamField>
+
+**API Endpoint:** `PUT /api/clients/{id}`
+
+**Returns:**
+<ResponseField name="client" type="object">
+  The updated client object
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { updateClient } from './infrastructure/clientService';
+
+const updates = {
+  phone: "+1234567899",
+  address: "999 New Street, City"
+};
+
+const updatedClient = await updateClient(25, updates);
+console.log(`Updated client: ${updatedClient.name}`);
+```
+
+**Example Response:**
+
+```json
+{
+  "id": 25,
+  "name": "Robert Johnson",
+  "email": "robert.j@example.com",
+  "phone": "+1234567899",
+  "address": "999 New Street, City",
+  "created_at": "2026-03-04T10:30:00.000000Z",
+  "updated_at": "2026-03-04T11:20:00.000000Z"
+}
+```
+
+---
+
+### deleteClient
+
+Deletes a client by ID.
+
+```javascript
+deleteClient(id)
+```
+
+<ParamField path="id" type="number" required>
+  The ID of the client to delete
+</ParamField>
+
+**API Endpoint:** `DELETE /api/clients/{id}`
+
+**Returns:**
+<ResponseField name="void" type="void">
+  No return value (void)
+</ResponseField>
+
+**Example Usage:**
+
+```javascript
+import { deleteClient } from './infrastructure/clientService';
+
+try {
+  await deleteClient(25);
+  console.log('Client deleted successfully');
+} catch (error) {
+  console.error('Failed to delete client:', error);
+}
+```
+
+**Notes:**
+- Deleting a client may fail if they have associated orders
+- Consider implementing soft deletes or archiving instead
+
+## Import
+
+```javascript
+import {
+  getClients,
+  getAllClients,
+  createClient,
+  updateClient,
+  deleteClient
+} from './infrastructure/clientService';
+```
+
+## Base API Configuration
+
+All requests are made using axios with the following configuration:
+- **Base URL:** `http://localhost:8000/api`
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+
+## Common Use Cases
+
+### Client Search with Pagination
+
+```javascript
+import { getClients } from './infrastructure/clientService';
+import { useState, useEffect } from 'react';
+
+const ClientList = () => {
+  const [clients, setClients] = useState([]);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [total, setTotal] = useState(0);
+  
+  useEffect(() => {
+    const loadClients = async () => {
+      const data = await getClients(page, search);
+      setClients(data.clients);
+      setTotal(data.total);
+    };
+    loadClients();
+  }, [page, search]);
+  
+  return (
+    <div>
+      <input 
+        type="text" 
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search clients..."
+      />
+      <div>Total: {total} clients</div>
+      {/* Render clients */}
+    </div>
+  );
+};
+```
+
+### Complete Client Management Flow
+
+```javascript
+import {
+  getClients,
+  createClient,
+  updateClient,
+  deleteClient
+} from './infrastructure/clientService';
+
+// List clients
+const clientsData = await getClients(1);
+
+// Create new client
+const newClient = await createClient({
+  name: "Alice Williams",
+  email: "alice@example.com",
+  phone: "+1234567893",
+  address: "321 Elm St"
+});
+
+// Update client
+const updated = await updateClient(newClient.id, {
+  phone: "+1234567894"
+});
+
+// Delete client
+await deleteClient(updated.id);
+```

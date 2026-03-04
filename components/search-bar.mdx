@@ -1,0 +1,217 @@
+---
+title: SearchBar
+description: A simple text input component for filtering and searching data
+---
+
+The SearchBar component provides a clean, focused text input for searching and filtering lists. It features modern styling with focus states and customizable placeholder text.
+
+## Visual Appearance
+
+The SearchBar renders as:
+- Standard text input with border
+- Rounded corners (rounded-lg)
+- Light gray border that highlights on focus
+- Primary color focus ring
+- White background
+- Fixed width (w-72)
+- Bottom margin for spacing
+
+## Props
+
+<ParamField path="value" type="string" required>
+  The current search input value (controlled component)
+</ParamField>
+
+<ParamField path="onChange" type="function" required>
+  Callback function invoked with the new string value when the input changes
+</ParamField>
+
+<ParamField path="placeholder" type="string" required>
+  Placeholder text displayed when the input is empty
+</ParamField>
+
+## Usage Examples
+
+### Products Search
+
+```jsx
+import SearchBar from "../../components/SearchBar";
+import { useState } from "react";
+
+function ProductsPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  return (
+    <div>
+      <SearchBar
+        value={search}
+        onChange={val => {
+          setSearch(val);
+          setPage(1); // Reset to first page when searching
+        }}
+        placeholder="Buscar producto..."
+      />
+      {/* Product list */}
+    </div>
+  );
+}
+```
+
+### Clients Search
+
+```jsx
+import SearchBar from "../../components/SearchBar";
+
+function ClientsPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  return (
+    <div>
+      <SearchBar
+        value={search}
+        onChange={val => {
+          setSearch(val);
+          setPage(1);
+        }}
+        placeholder="Buscar cliente..."
+      />
+      {/* Clients list */}
+    </div>
+  );
+}
+```
+
+### Orders Search
+
+```jsx
+import SearchBar from "../../components/SearchBar";
+
+function OrdersPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  return (
+    <div>
+      <SearchBar
+        value={search}
+        onChange={val => {
+          setSearch(val);
+          setPage(1);
+        }}
+        placeholder="Buscar pedido..."
+      />
+      {/* Orders list */}
+    </div>
+  );
+}
+```
+
+### Inventory Search
+
+```jsx
+import SearchBar from "../../components/SearchBar";
+
+function InventoryPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  return (
+    <div>
+      <SearchBar
+        value={search}
+        onChange={val => {
+          setSearch(val);
+          setPage(1);
+        }}
+        placeholder="Buscar en inventario..."
+      />
+      {/* Inventory list */}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### Reset Pagination on Search
+
+Always reset the page number to 1 when the search value changes:
+
+```jsx
+onChange={val => {
+  setSearch(val);
+  setPage(1); // Important: reset to first page
+}}
+```
+
+This ensures users see relevant results immediately without being on an empty page.
+
+### Controlled Component Pattern
+
+SearchBar is a controlled component, meaning you must:
+1. Maintain search state with `useState`
+2. Pass the current value to the `value` prop
+3. Update state in the `onChange` callback
+
+```jsx
+const [search, setSearch] = useState("");
+
+<SearchBar value={search} onChange={setSearch} placeholder="Search..." />
+```
+
+### Debouncing (Optional)
+
+For API calls, consider debouncing the search input:
+
+```jsx
+import { useState, useEffect } from "react";
+
+function MyPage() {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Use debouncedSearch for API calls
+  useEffect(() => {
+    fetchData(debouncedSearch);
+  }, [debouncedSearch]);
+
+  return (
+    <SearchBar 
+      value={search} 
+      onChange={setSearch} 
+      placeholder="Search..." 
+    />
+  );
+}
+```
+
+## Common Use Cases
+
+- **Product Filtering**: Search products by name or SKU
+- **Client Lookup**: Find clients by name, email, or phone
+- **Order Search**: Filter orders by ID or client name
+- **Inventory Search**: Locate products in inventory
+- **Real-time Filtering**: Filter table data as user types
+
+## Implementation Details
+
+The SearchBar component is located at `/home/daytona/workspace/source/src/ui/components/SearchBar.jsx:1-5`.
+
+Key features:
+- Controlled input component
+- Text type input
+- Focus ring with primary color (ring-primary/30)
+- Border styling with focus state
+- Small text size (text-sm)
+- Padding for comfortable interaction (px-4 py-2)
+- Bottom margin (mb-4) for spacing from content
+- White background with gray border

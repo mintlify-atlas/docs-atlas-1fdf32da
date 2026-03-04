@@ -1,0 +1,355 @@
+---
+title: Project Structure
+description: Detailed breakdown of the FrontendPT directory structure
+---
+
+# Project Structure
+
+This page provides a comprehensive overview of how FrontendPT organizes its codebase. Understanding this structure is essential for navigating the project and contributing effectively.
+
+## Root Structure
+
+```
+src/
+├── domain/              # Business entities and types
+├── application/         # Use cases and application logic
+├── infrastructure/      # External services and API clients
+├── ui/                 # User interface layer
+├── assets/             # Static assets (images, icons)
+├── App.jsx             # Root application component
+├── App.css             # Global app styles
+├── main.jsx            # Application entry point
+└── index.css           # Global CSS styles
+```
+
+## Directory Breakdown
+
+### Domain Layer (`src/domain/`)
+
+The domain layer contains pure business logic and type definitions.
+
+```
+domain/
+└── types.js            # Domain entity factory functions
+```
+
+**Purpose**: Define the shape of business entities independent of any framework or external service.
+
+**Key Exports**:
+- `createProduct(data)` - Product entity factory
+- `createCategory(data)` - Category entity factory
+- `createClient(data)` - Client entity factory
+
+**Example** from `src/domain/types.js:3`:
+```javascript
+export const createProduct = data => ({
+  id: data.id,
+  name: data.name,
+  price: parseFloat(data.price),
+  stock: data.stock,
+  category_id: data.category_id,
+  category: data.category ?? null,
+});
+```
+
+### Application Layer (`src/application/`)
+
+Contains application-specific business rules and orchestration logic.
+
+```
+application/
+└── hooks/
+    ├── useProducts.js      # Product management logic
+    ├── useCategories.js    # Category management logic
+    ├── useClients.js       # Client management logic
+    ├── useInventory.js     # Inventory management logic
+    ├── useOrders.js        # Order management logic
+    └── useToast.js         # Toast notification logic
+```
+
+**Purpose**: Encapsulate use cases and coordinate between infrastructure services and UI components.
+
+**Hook Responsibilities**:
+- State management for specific domains
+- Orchestrating CRUD operations
+- Handling loading and error states
+- Managing pagination and search
+
+**Example** from `src/application/hooks/useProducts.js:4`:
+```javascript
+export function useProducts() {
+  const [products, setProducts] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  // Fetch products from infrastructure layer
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await productService.getProducts(page, search);
+      setProducts(data.products.data);
+      setPagination(data.products);
+      setError(null);
+    } catch (err) {
+      setError("Error al cargar productos");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search]);
+
+  return {
+    products,
+    pagination,
+    loading,
+    error,
+    search,
+    setSearch,
+    page,
+    setPage,
+    addProduct,
+    editProduct,
+    removeProduct,
+  };
+}
+```
+
+### Infrastructure Layer (`src/infrastructure/`)
+
+Handles communication with external systems and services.
+
+```
+infrastructure/
+├── api.js                  # Axios instance configuration
+├── productService.js       # Product API endpoints
+├── categoryService.js      # Category API endpoints
+├── clientService.js        # Client API endpoints
+├── inventoryService.js     # Inventory API endpoints
+└── orderSrevice.js         # Order API endpoints
+```
+
+**Purpose**: Abstract external dependencies (APIs, databases) behind service interfaces.
+
+**Base API Configuration** from `src/infrastructure/api.js:5`:
+```javascript
+const api = axios.create({
+  baseURL: "http://localhost:8000/api",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+```
+
+**Service Pattern** from `src/infrastructure/productService.js:3`:
+```javascript
+// Each service exports CRUD operations
+export const getProducts = async (page = 1, search = "", category_id = "") => {
+  const params = { page, search };
+  if (category_id !== "") params.category_id = category_id;
+  const { data } = await api.get("/products", { params });
+  return data;
+};
+
+export const createProduct = async product => {
+  const { data } = await api.post("/products", product);
+  return data.product;
+};
+
+export const updateProduct = async (id, product) => {
+  const { data } = await api.put(`/products/${id}`, product);
+  return data.product;
+};
+
+export const deleteProduct = async id => {
+  await api.delete(`/products/${id}`);
+};
+```
+
+### UI Layer (`src/ui/`)
+
+Contains all visual components and pages.
+
+```
+ui/
+├── components/             # Reusable UI components
+│   ├── Modal.jsx          # Generic modal component
+│   ├── PageHeader.jsx     # Page header with title/actions
+│   ├── Pagination.jsx     # Pagination controls
+│   ├── SearchBar.jsx      # Search input component
+│   ├── Sidebar.jsx        # Navigation sidebar
+│   └── Toast.jsx          # Toast notification component
+└── pages/                 # Page-level components
+    ├── categories/
+    │   └── CategoriesPage.jsx
+    ├── clients/
+    │   └── ClientsPage.jsx
+    ├── inventory/
+    │   └── InventoryPage.jsx
+    ├── orders/
+    │   └── OrdersPage.jsx
+    └── products/
+        └── ProductsPage.jsx
+```
+
+**Purpose**: Present data to users and handle user interactions.
+
+#### Components Directory
+
+Reusable components follow a simple, composable design:
+
+**Modal Component** from `src/ui/components/Modal.jsx:2`:
+```javascript
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+          <button onClick={onClose}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+#### Pages Directory
+
+Each page is organized by feature domain and follows a consistent pattern:
+
+**Page Structure Example** from `src/ui/pages/products/ProductsPage.jsx:12`:
+```javascript
+function ProductsPage() {
+  // 1. Application hooks for business logic
+  const { products, pagination, loading, search, setSearch, 
+         setPage, addProduct, editProduct, removeProduct } = useProducts();
+  const { categories } = useCategories();
+  const { toast, showToast, hideToast } = useToast();
+
+  // 2. Local UI state
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ name: "", price: "", stock: "", category_id: "" });
+
+  // 3. Event handlers
+  const handleSubmit = async () => { /* ... */ };
+  const handleDelete = async (id) => { /* ... */ };
+
+  // 4. Render UI
+  return (
+    <div>
+      <PageHeader title="Productos" subtitle="Catálogo y gestión de precios" />
+      <SearchBar value={search} onChange={setSearch} />
+      {/* Table, Modal, Toast components */}
+    </div>
+  );
+}
+```
+
+### Root Files
+
+#### `main.jsx`
+
+Application entry point that renders the root React component:
+```javascript
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+```
+
+#### `App.jsx`
+
+Root component with routing configuration from `src/App.jsx:10`:
+```javascript
+function App() {
+  return (
+    <BrowserRouter>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <Routes>
+            <Route path="/" element={<Navigate to="/products" />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}
+```
+
+## File Naming Conventions
+
+### Components & Pages
+- **PascalCase** for component files: `ProductsPage.jsx`, `Modal.jsx`
+- **PascalCase** for component names matching file names
+
+### Services & Utilities
+- **camelCase** for service files: `productService.js`, `api.js`
+- **Named exports** for service functions: `export const getProducts = ...`
+
+### Hooks
+- **camelCase** with `use` prefix: `useProducts.js`, `useToast.js`
+- **Named exports** for hook functions: `export function useProducts() { ... }`
+
+### Types & Domain
+- **camelCase** for files: `types.js`
+- **camelCase** with `create` prefix for factories: `createProduct`, `createCategory`
+
+## Module Pattern
+
+Each business domain follows a consistent vertical slice:
+
+```
+Products Module:
+  domain/types.js                    → createProduct()
+  infrastructure/productService.js   → API calls
+  application/hooks/useProducts.js   → Business logic
+  ui/pages/products/ProductsPage.jsx → User interface
+
+Categories Module:
+  domain/types.js                      → createCategory()
+  infrastructure/categoryService.js    → API calls
+  application/hooks/useCategories.js   → Business logic
+  ui/pages/categories/CategoriesPage.jsx → User interface
+```
+
+## Adding New Features
+
+When adding a new feature, follow this structure:
+
+1. **Define domain type** in `domain/types.js`
+2. **Create service** in `infrastructure/[feature]Service.js`
+3. **Implement hook** in `application/hooks/use[Feature].js`
+4. **Build UI** in `ui/pages/[feature]/[Feature]Page.jsx`
+5. **Add route** in `App.jsx`
+
+<Tip>
+This vertical slice approach ensures all layers are properly implemented for each feature.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture/overview">
+    High-level architecture concepts and patterns
+  </Card>
+  <Card title="Clean Architecture Deep Dive" icon="layer-group" href="/architecture/clean-architecture">
+    Detailed explanation of each architectural layer
+  </Card>
+</CardGroup>

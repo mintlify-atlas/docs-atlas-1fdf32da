@@ -1,0 +1,348 @@
+---
+title: 'Inventory Module'
+description: 'Real-time stock control and inventory management - track and adjust product quantities'
+---
+
+## Overview
+
+The Inventory module provides a focused interface for managing product stock levels. Unlike the Products module which handles all product data, the Inventory module is specifically designed for quick stock adjustments and monitoring.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Stock Monitoring" icon="chart-line">
+    View current stock levels for all products in a dedicated interface.
+  </Card>
+  <Card title="Quick Adjustments" icon="sliders">
+    Update stock quantities with a simple modal dialog.
+  </Card>
+  <Card title="Search Products" icon="magnifying-glass">
+    Find products quickly by name for stock updates.
+  </Card>
+  <Card title="Category Display" icon="tag">
+    See product categories alongside stock information.
+  </Card>
+</CardGroup>
+
+## User Interface
+
+The Inventory page (`src/ui/pages/inventory/InventoryPage.jsx`) features:
+
+- **Header**: "Inventario" title with subtitle "Control de stock por producto"
+- **Search Bar**: Filter products by name
+- **Inventory Table**: ID, Name, Category, Current Stock, and Actions
+- **Stock Badge**: Color-coded badge displaying current quantity
+- **Adjustment Modal**: Simple interface for updating stock
+
+### Visual Design
+
+Stock levels are displayed with a distinctive badge:
+
+```jsx
+<td className="px-4 py-3">
+  <span className="bg-primary-light text-primary text-xs font-semibold px-2 py-1 rounded">
+    {product.stock}
+  </span>
+</td>
+```
+
+## Developer Usage
+
+### Using the Inventory Hook
+
+The `useInventory` hook is streamlined for stock management:
+
+```javascript
+import { useInventory } from "../../../application/hooks/useInventory";
+
+function MyComponent() {
+  const {
+    products,    // Products with stock info
+    pagination,  // Pagination metadata
+    loading,     // Loading state
+    search,      // Current search term
+    setSearch,   // Update search
+    page,        // Current page number
+    setPage,     // Change page
+    adjust       // Adjust stock quantity
+  } = useInventory();
+
+  return (
+    // Your component JSX
+  );
+}
+```
+
+### Hook Implementation
+
+<Tabs>
+  <Tab title="Hook Source">
+    ```javascript src/application/hooks/useInventory.js
+    import { useState, useEffect, useCallback } from "react";
+    import * as inventoryService from "../../infrastructure/inventoryService";
+
+    export function useInventory() {
+      const [products, setProducts] = useState([]);
+      const [pagination, setPagination] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [search, setSearch] = useState("");
+      const [page, setPage] = useState(1);
+
+      const fetchInventory = useCallback(async () => {
+        try {
+          setLoading(true);
+          const data = await inventoryService.getInventory(page, search);
+          setProducts(data.products.data);
+          setPagination(data.products);
+        } catch (err) {
+          console.error("Error al cargar inventario", err);
+        } finally {
+          setLoading(false);
+        }
+      }, [page, search]);
+
+      useEffect(() => {
+        fetchInventory();
+      }, [fetchInventory]);
+
+      const adjust = async (id, stock) => {
+        await inventoryService.adjustStock(id, stock);
+        fetchInventory();
+      };
+
+      return {
+        products,
+        pagination,
+        loading,
+        search,
+        setSearch,
+        page,
+        setPage,
+        adjust,
+      };
+    }
+    ```
+  </Tab>
+  <Tab title="Service Layer">
+    ```javascript src/infrastructure/inventoryService.js
+    import api from "./api";
+
+    export const getInventory = async (page = 1, search = "") => {
+      const params = { page };
+      if (search) params.search = search;
+      const { data } = await api.get("/inventory", { params });
+      return data;
+    };
+
+    export const adjustStock = async (id, stock) => {
+      const { data } = await api.patch(`/inventory/${id}`, { stock });
+      return data.product;
+    };
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  The inventory service uses PATCH for stock updates, indicating a partial update operation.
+</Note>
+
+## Workflow Examples
+
+### Adjusting Stock Levels
+
+<Steps>
+  <Step title="Select Product">
+    Click the "Ajustar stock" button on the product row you want to update.
+  </Step>
+  <Step title="View Current Stock">
+    The modal opens showing the product name and current stock level highlighted in color.
+  </Step>
+  <Step title="Enter New Quantity">
+    Type the new stock amount in the input field. The input is auto-focused and accepts Enter key.
+  </Step>
+  <Step title="Save Changes">
+    Click "Guardar" or press Enter to save the new stock level.
+  </Step>
+  <Step title="Confirmation">
+    The modal closes and a toast notification confirms: "Stock actualizado correctamente".
+  </Step>
+</Steps>
+
+### Stock Adjustment Modal
+
+```javascript
+const [adjustingProduct, setAdjustingProduct] = useState(null);
+const [tempStock, setTempStock] = useState("");
+
+const handleAdjust = async () => {
+  if (tempStock === "" || isNaN(tempStock) || Number(tempStock) < 0) return;
+  try {
+    await adjust(adjustingProduct.id, Number(tempStock));
+    setAdjustingProduct(null);
+    setTempStock("");
+    showToast("Stock actualizado correctamente");
+  } catch (err) {
+    const msg = err.response?.data?.message ?? "Error al ajustar stock";
+    showToast(msg, "error");
+  }
+};
+```
+
+### Modal UI Structure
+
+```jsx
+{adjustingProduct && (
+  <Modal title={`Ajustar stock — ${adjustingProduct.name}`} onClose={() => setAdjustingProduct(null)}>
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-gray-500">
+        Stock actual: <span className="font-semibold text-primary">{adjustingProduct.stock}</span>
+      </p>
+      <input 
+        type="number" 
+        min="0" 
+        className="input" 
+        placeholder="Nuevo stock" 
+        value={tempStock} 
+        onChange={e => setTempStock(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && handleAdjust()}
+        autoFocus
+      />
+      <button onClick={handleAdjust}>
+        Guardar
+      </button>
+    </div>
+  </Modal>
+)}
+```
+
+## Data Structure
+
+### Inventory Product Object
+
+```typescript
+interface InventoryProduct {
+  id: number;
+  name: string;
+  stock: number;
+  category?: {
+    id: number;
+    name: string;
+  };
+}
+```
+
+<Note>
+  The inventory endpoint returns product objects with category relationships populated.
+</Note>
+
+### API Endpoints
+
+| Method | Endpoint | Parameters | Description |
+|--------|----------|------------|-------------|
+| GET | `/inventory` | `page`, `search` | Paginated product list with stock |
+| PATCH | `/inventory/:id` | `{ stock: number }` | Update product stock |
+
+## Validation Rules
+
+<Warning>
+  Stock adjustments must meet these criteria:
+  - Value cannot be empty
+  - Must be a valid number
+  - Must be greater than or equal to 0
+</Warning>
+
+```javascript
+const handleAdjust = async () => {
+  // Validation checks
+  if (tempStock === "") return;           // Not empty
+  if (isNaN(tempStock)) return;          // Valid number
+  if (Number(tempStock) < 0) return;     // Non-negative
+  
+  // Proceed with adjustment
+  await adjust(adjustingProduct.id, Number(tempStock));
+};
+```
+
+## Integration with Orders
+
+The Inventory module is automatically updated when orders are processed:
+
+- **Order Created**: Stock is reduced by order quantities
+- **Order Cancelled**: Stock is restored (if order was pending)
+- **Order Deleted**: Stock may be restored depending on order status
+
+<Tip>
+  The backend handles stock updates automatically during order operations. Manual adjustments through this module should be used for corrections, restocking, or damage.
+</Tip>
+
+## Comparison: Inventory vs Products
+
+| Feature | Inventory Module | Products Module |
+|---------|-----------------|----------------|
+| Purpose | Stock management | Full product CRUD |
+| Fields | Name, Category, Stock | Name, Price, Stock, Category |
+| Operations | Adjust stock only | Create, Edit, Delete, Adjust |
+| Use Case | Quick stock updates | Complete product management |
+| UI Focus | Simplified, focused | Comprehensive |
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use for Stock Only" icon="box">
+    Use this module for stock adjustments. For price or name changes, use the Products module.
+  </Card>
+  <Card title="Validation First" icon="shield-check">
+    Always validate stock values are non-negative numbers before submission.
+  </Card>
+  <Card title="Auto-focus Input" icon="keyboard">
+    The modal input is auto-focused for faster data entry.
+  </Card>
+  <Card title="Enter Key Support" icon="bolt">
+    Support Enter key submission in the adjustment modal for efficiency.
+  </Card>
+</CardGroup>
+
+## Error Handling
+
+```javascript
+try {
+  await adjust(adjustingProduct.id, Number(tempStock));
+  setAdjustingProduct(null);
+  showToast("Stock actualizado correctamente");
+} catch (err) {
+  const msg = err.response?.data?.message ?? "Error al ajustar stock";
+  showToast(msg, "error");
+}
+```
+
+Possible backend errors:
+- Product not found
+- Invalid stock value
+- Database constraint violations
+
+## Keyboard Shortcuts
+
+- **Enter**: Submit stock adjustment when modal is open
+- **Escape**: Close modal (standard modal behavior)
+
+## Performance Optimizations
+
+- Server-side pagination for large inventories
+- Debounced search through useCallback dependencies
+- Minimal re-renders with focused state updates
+- Loading states prevent duplicate requests
+
+## UI Components Used
+
+- **PageHeader**: Title and subtitle
+- **SearchBar**: Product search
+- **Pagination**: Navigate inventory pages
+- **Modal**: Stock adjustment interface
+- **Toast**: Success/error notifications
+
+## Real-world Usage Scenarios
+
+1. **Restocking**: Increase stock when new inventory arrives
+2. **Damage Control**: Reduce stock for damaged/lost items
+3. **Inventory Audits**: Correct discrepancies between physical and system counts
+4. **Seasonal Adjustments**: Bulk update stock levels for seasonal items
