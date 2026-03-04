@@ -1,0 +1,123 @@
+{
+  "projectType": "frontend",
+  "projectName": "FrontendPT",
+  "projectDescription": "React + Vite frontend for managing products, clients, inventory, and orders with a Laravel backend",
+  "theme": "palm",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "architecture/overview",
+              "architecture/project-structure",
+              "architecture/clean-architecture"
+            ]
+          },
+          {
+            "group": "Modules",
+            "pages": [
+              "modules/products",
+              "modules/categories",
+              "modules/clients",
+              "modules/inventory",
+              "modules/orders"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/modal",
+              "components/page-header",
+              "components/pagination",
+              "components/search-bar",
+              "components/sidebar",
+              "components/toast"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Hooks",
+            "pages": [
+              "api/hooks/use-products",
+              "api/hooks/use-categories",
+              "api/hooks/use-clients",
+              "api/hooks/use-inventory",
+              "api/hooks/use-orders",
+              "api/hooks/use-toast"
+            ]
+          },
+          {
+            "group": "Services",
+            "pages": [
+              "api/services/product-service",
+              "api/services/category-service",
+              "api/services/client-service",
+              "api/services/inventory-service",
+              "api/services/order-service"
+            ]
+          },
+          {
+            "group": "Types",
+            "pages": [
+              "api/types/domain-types"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Product management with categories and search",
+    "Client management with CRUD operations",
+    "Inventory control with stock adjustments",
+    "Order creation with multi-product selection",
+    "Real-time order status updates",
+    "Server-side pagination and search",
+    "Clean architecture with domain/application/infrastructure layers",
+    "Reusable UI components with TailwindCSS"
+  ],
+  "publicApiSurface": [
+    "useProducts",
+    "useCategories",
+    "useClients",
+    "useInventory",
+    "useOrders",
+    "useToast",
+    "productService.getProducts",
+    "productService.createProduct",
+    "productService.updateProduct",
+    "productService.deleteProduct",
+    "categoryService.getCategories",
+    "categoryService.createCategory",
+    "categoryService.updateCategory",
+    "categoryService.deleteCategory",
+    "clientService.getClients",
+    "clientService.createClient",
+    "clientService.updateClient",
+    "clientService.deleteClient",
+    "inventoryService.getInventory",
+    "inventoryService.updateStock",
+    "orderService.getOrders",
+    "orderService.createOrder",
+    "orderService.updateOrderStatus",
+    "orderService.deleteOrder"
+  ]
+}
